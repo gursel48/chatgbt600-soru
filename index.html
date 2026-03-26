@@ -1,0 +1,4181 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Sınav Portalı</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f4f8;
+      margin: 0;
+      padding: 10px;
+      display: flex;
+      justify-content: center;
+      padding-bottom: 80px;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 860px;
+    }
+
+    .menu-container, .quiz-container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      width: 100%;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .menu-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: left;
+      cursor: pointer;
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: white;
+    }
+
+    .menu-btn.locked {
+      background: linear-gradient(135deg, #6c757d, #495057);
+      cursor: not-allowed;
+      order: 999;
+      opacity: 0.85;
+    }
+
+    .quiz-container {
+      display: none;
+      position: relative;
+      padding-top: 85px;
+      min-height: 100vh;
+    }
+
+    .progress-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 6px;
+      background: #28a745;
+      transition: 0.3s;
+      width: 0%;
+      border-radius: 14px 14px 0 0;
+    }
+
+    .main-menu-btn {
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: calc(1rem + 4pt);
+      color: #333;
+      padding: 5px 0;
+    }
+
+    .header-info {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding-right: 110px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+      flex: 1;
+      flex-wrap: wrap;
+    }
+
+    .header-subject {
+      font-weight: normal;
+      color: #777;
+      font-size: 0.95rem;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .retry-badge {
+      display: none;
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffe69c;
+      font-weight: bold;
+      font-size: 0.95rem;
+    }
+
+    .question-title {
+      margin-top: 0;
+      margin-bottom: 16px;
+      line-height: 1.45;
+      font-size: 1.2rem;
+      color: #222;
+    }
+
+    .option-btn {
+      width: 100%;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 12px;
+      border: 2px solid #e9ecef;
+      background: #f8f9fa;
+      text-align: left;
+      cursor: pointer;
+      font-size: 1.05rem;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+      position: relative;
+    }
+
+    .option-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+
+    .option-btn:disabled {
+      cursor: default;
+    }
+
+    .option-btn.correct {
+      background: #d4edda !important;
+      border-color: #28a745 !important;
+      color: #155724 !important;
+      font-weight: bold;
+    }
+
+    .option-btn.wrong {
+      background: #f8d7da !important;
+      border-color: #dc3545 !important;
+      color: #721c24 !important;
+      font-weight: bold;
+    }
+
+    .tick {
+      display: inline-block;
+      margin-left: 10px;
+      color: #1f9d45;
+      font-weight: bold;
+      opacity: 0;
+      transform: scale(0.4);
+    }
+
+    .tick.show {
+      animation: popTick 0.45s ease forwards;
+    }
+
+    @keyframes popTick {
+      0%   { opacity: 0; transform: scale(0.4); }
+      60%  { opacity: 1; transform: scale(1.2); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .explanation {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background: #eaf2f8;
+      border-left: 5px solid #2980b9;
+      border-radius: 8px;
+      line-height: 1.5;
+    }
+
+    .nav-controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 25px;
+    }
+
+    .nav-btn {
+      flex: 1;
+      padding: 18px;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .next-btn { background: #007bff; }
+    .prev-btn {
+      background: #e9ecef;
+      color: #dc3545 !important;
+      border: 1px solid #ddd;
+    }
+
+    .quiz-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+      color: #666;
+      font-weight: bold;
+      font-size: 0.9rem;
+      flex-wrap: wrap;
+    }
+
+    .disclaimer-box {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fdfdfd;
+      border: 1px solid #eee;
+      border-radius: 10px;
+      color: #888;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    .disclaimer-title {
+      display: block;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+    }
+
+    .source-tag {
+      position: fixed;
+      bottom: 8px;
+      left: 8px;
+      background: rgba(0, 0, 0, 0.05);
+      color: #777;
+      padding: 5px 10px;
+      border-radius: 10px;
+      font-size: 0.72rem;
+      font-weight: bold;
+      z-index: 9999;
+    }
+
+    .reset-set-btn {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      background: #ffc107;
+      border: none;
+      padding: 8px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 0.8rem;
+      cursor: pointer;
+      z-index: 5;
+    }
+
+    @media (max-width: 480px) {
+      .quiz-container {
+        padding-top: 110px;
+      }
+
+      .header-info {
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        padding-right: 104px;
+        align-items: flex-start;
+      }
+
+      .header-left {
+        display: block;
+        padding-right: 6px;
+      }
+
+      .main-menu-btn {
+        display: block;
+        font-size: 0.95rem;
+        padding: 0;
+        margin-bottom: 6px;
+      }
+
+      .header-subject {
+        display: block;
+        margin: 0;
+        font-size: 0.82rem;
+        line-height: 1.3;
+        max-width: 100%;
+      }
+
+      .question-title {
+        font-size: 1.05rem;
+      }
+
+      .option-btn {
+        font-size: 1rem;
+        padding: 14px;
+      }
+
+      .reset-set-btn {
+        top: 12px;
+        right: 12px;
+        font-size: 0.75rem;
+        padding: 7px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="menuContainer" class="menu-container">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:20px;">
+      <h1 id="mainTitle" style="margin:0;">Yükleniyor...</h1>
+      <button onclick="clearAllStatistics()" style="background:#dc3545; color:white; border:none; padding:8px 10px; border-radius:8px; cursor:pointer; font-size:0.75rem;">
+        Verileri Sıfırla
+      </button>
+    </div>
+
+    <div id="menuGrid" class="menu-grid"></div>
+
+    <div class="disclaimer-box">
+      <span class="disclaimer-title">⚠️ Önemli Uyarı</span>
+      Bu sistemde yer alan içerikler yalnızca eğitim amaçlıdır. İçeriklerin kullanımından doğabilecek doğrudan veya dolaylı hiçbir sorumluluk kabul edilmez. Tüm kullanım sorumluluğu kullanıcıya aittir.
+    </div>
+  </div>
+
+  <div id="quizContainer" class="quiz-container">
+    <div class="progress-bar" id="progressBar"></div>
+
+    <div class="header-info">
+      <div class="header-left">
+        <button onclick="showMenu()" class="main-menu-btn">☰ Ana Menü</button>
+        <span id="headerSubject" class="header-subject"></span>
+      </div>
+    </div>
+
+    <button onclick="resetCurrentSet()" class="reset-set-btn">Seti Sıfırla</button>
+
+    <div id="retryBadge" class="retry-badge">Yalnış cevaplanan soru</div>
+    <h2 id="questionText" class="question-title">...</h2>
+
+    <div id="optionsArea"></div>
+
+    <div class="quiz-footer">
+      <div id="footerLeft">Kalan: 0</div>
+      <div id="footerRight">0 / 0</div>
+    </div>
+
+    <div id="explanationArea" class="explanation"></div>
+
+    <div class="nav-controls">
+      <button id="prevBtn" class="nav-btn prev-btn" onclick="goBack()" style="visibility:hidden;">❮ Önceki</button>
+      <button id="nextBtn" class="nav-btn next-btn" onclick="goForward()" style="visibility:hidden;">Yeni Soru ❯</button>
+    </div>
+  </div>
+</div>
+
+<div class="source-tag" id="sourceTag">Kaynak: ...</div>
+
+<script>
+  const CURRENT_SUBJECT = "chtgpt soruları";
+  const SOURCE_TEXT = "Kaynak: chatgpt";
+  const QUESTIONS_PER_SET = 30;
+
+  const questions = [
+  {
+    q: "Aşağıdaki balıklardan hangisinin avlanabilir minimum boyu daha büyüktür?   (Su Ürünleri Mevzuatı)",
+    o: ["Hamsi", "Mezgit", "Kalkan", "Sardalya"],
+    c: 2,
+    e: "Kalkan gibi türler daha yavaş büyür ve geç olgunlaşır, bu nedenle minimum av boyu daha yüksektir."
+  },
+  {
+    q: "Balık yemlerinde kullanılan karbonhidratlar aşağıdakilerden hangisini sağlar?   (Balık Besleme)",
+    o: ["Vitamin", "Enerji", "Mineral", "Protein"],
+    c: 1,
+    e: "Karbonhidratlar enerji sağlar ve protein tasarrufu oluşturur."
+  },
+  {
+    q: "Balıklarda bağışıklığı zayıflatan faktör aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Temiz su", "Uygun ortam", "Dengeli beslenme", "Stres"],
+    c: 3,
+    e: "Stres bağışıklık sistemini baskılar."
+  },
+  {
+    q: "Balıkta gözlerin içe çökmesi aşağıdakilerden hangisini gösterir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Bozulma", "Protein artışı", "Yağ artışı", "Tazelik"],
+    c: 0,
+    e: "Çökük göz bozulma belirtisidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi sabit maliyet değildir?   (Su Ürünleri Ekonomisi)",
+    o: ["Bina", "Yem", "Kira", "Ruhsat"],
+    c: 1,
+    e: "Yem üretime bağlıdır, değişken maliyettir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliğini azaltır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Tarım ilacı", "Atık", "Sanayi", "Arıtma"],
+    c: 3,
+    e: "Arıtma ile kirlilik düşer."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesinin temelidir?   (Su Kalitesi)",
+    o: ["Oksijen", "Renk", "Işık", "Ses"],
+    c: 0,
+    e: "Oksijen yaşamın temelidir."
+  },
+  {
+    q: "Balık yemlerinde kullanılan vitaminlerin temel görevi aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Metabolizmayı düzenlemek", "Su sağlamak", "Enerji sağlamak", "Yapı oluşturmak"],
+    c: 2,
+    e: "Vitaminler enzimatik faaliyetleri düzenleyerek sağlıklı büyümeyi sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri yönetiminde temel amaçtır?   (Su Ürünleri Mevzuatı)",
+    o: ["Kısa vadeli kazanç", "Stokların korunması", "Balık fiyatı artırma", "İthalat"],
+    c: 1,
+    e: "Amaç kaynakların sürdürülebilir şekilde kullanılmasıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi “fırsat maliyeti” kavramına örnektir?   (Su Ürünleri Ekonomisi)",
+    o: ["İşçilik ücreti", "Yem gideri", "Elektrik gideri", "Alternatif yatırımın getirisi"],
+    c: 3,
+    e: "Vazgeçilen en iyi alternatif kazançtır."
+  },
+  {
+    q: "Balıklarda iştahsızlık aşağıdakilerden hangisinin göstergesi olabilir?   (Balık Hastalıkları)",
+    o: ["Enerji artışı", "Büyüme", "Hastalık", "Sağlık"],
+    c: 2,
+    e: "İştahsızlık genellikle hastalık belirtisidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünlerinde bozulmayı yavaşlatır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Sıcak ortam", "Kirli ortam", "Açık hava", "Soğuk depolama"],
+    c: 0,
+    e: "Soğuk ortam mikroorganizmayı yavaşlatır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini belirleyen parametrelerden biridir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Ses", "Renk", "Işık", "Çözünmüş oksijen"],
+    c: 3,
+    e: "Oksijen seviyesi su kalitesini belirler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi suyun tamponlama kapasitesini ifade eder?   (Su Kalitesi)",
+    o: ["Tuz", "Alkalinite", "pH", "Oksijen"],
+    c: 2,
+    e: "Alkalinite pH değişimlerine karşı dirençtir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri mevzuatına uygun bir davranıştır?   (Su Ürünleri Mevzuatı)",
+    o: ["Kurallara uygun av", "Ruhsatsız av", "Kaçak av", "Yasak dönemde av"],
+    c: 0,
+    e: "Kurallara uygun avcılık yasaldır."
+  },
+  {
+    q: "Balık yemlerinin kalitesini artıran en önemli özellik aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Boyut", "Sindirilebilirlik", "Renk", "Ses"],
+    c: 1,
+    e: "Sindirilebilirlik yüksekse yem daha iyi değerlendirilir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi işletme gideridir?   (Su Ürünleri Ekonomisi)",
+    o: ["Kar", "Talep", "Maliyet", "Gelir"],
+    c: 2,
+    e: "Giderler maliyet kalemidir."
+  },
+  {
+    q: "Balıklarda solungaç hasarı aşağıdakilerden hangisine neden olur?   (Balık Hastalıkları)",
+    o: ["Solunum zorluğu", "Tat artışı", "Renk değişimi", "Protein artışı"],
+    c: 0,
+    e: "Solungaç hasarı oksijen alımını zorlaştırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliğinin fiziksel etkisidir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Bakteri artışı", "Zehirlenme", "Ölüm", "Bulanıklık"],
+    c: 3,
+    e: "Askıda katılar bulanıklık yapar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi bozulmayı geciktirir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Kir", "Soğutma", "Sıcaklık artışı", "Açık depolama"],
+    c: 1,
+    e: "Soğutma mikroorganizma gelişimini yavaşlatır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi çözünmüş oksijenin artmasına neden olur?   (Su Kalitesi)",
+    o: ["Sıcaklık artışı", "Organik kirlilik", "Aşırı yemleme", "Fotosentez"],
+    c: 0,
+    e: "Bitkiler oksijen üretir."
+  },
+  {
+    q: "Balıklarda açlık süresi uzarsa ilk olarak hangi durum görülür?   (Balık Besleme)",
+    o: ["Kilo kaybı", "Hızlı büyüme", "Enerji depolanması", "Protein artışı"],
+    c: 2,
+    e: "Açlıkta enerji ihtiyacı karşılanamaz ve balık kilo kaybeder."
+  },
+  {
+    q: "Su ürünleri denetimi hangi kurumun sorumluluğundadır?   (Su Ürünleri Mevzuatı)",
+    o: ["İçişleri Bakanlığı", "Tarım ve Orman Bakanlığı", "Sağlık Bakanlığı", "Ticaret Bakanlığı"],
+    c: 1,
+    e: "Su ürünleri yönetimi ve denetimi Tarım ve Orman Bakanlığı tarafından yürütülür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi ağır metal kirliliğinin en önemli özelliğidir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Biyobirikim yapması", "Suda çözünmemesi", "Zararsız olması", "Hızlı parçalanması"],
+    c: 3,
+    e: "Ağır metaller canlı dokuda birikir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıkta ileri düzey bozulma belirtisidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Parlak deri", "Sert et", "Amonyak kokusu", "Hafif koku"],
+    c: 2,
+    e: "Amonyak kokusu ileri bozulmayı gösterir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi talebi artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Üretim artışı", "Gelir artışı", "Fiyat artışı", "Maliyet artışı"],
+    c: 1,
+    e: "Gelir artışı talebi artırır."
+  },
+  {
+    q: "Balıklarda bakteriyel hastalıkların tipik belirtisi aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Renk artışı", "Oksijen artışı", "Yara ve ülser", "Hızlı büyüme"],
+    c: 3,
+    e: "Bakteriyel enfeksiyonlar genellikle doku hasarı oluşturur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri denetiminde görevli kurumdur?   (Su Ürünleri Mevzuatı)",
+    o: ["Tarım ve Orman Bakanlığı", "Sağlık Bakanlığı", "İçişleri Bakanlığı", "Ticaret Bakanlığı"],
+    c: 0,
+    e: "Denetim Tarım ve Orman Bakanlığı tarafından yapılır."
+  },
+  {
+    q: "Balık yemlerinde kullanılan vitaminlerin eksikliği aşağıdakilerden hangisine yol açar?   (Balık Besleme)",
+    o: ["Sağlık artışı", "Metabolik bozukluk", "Su artışı", "Hızlı büyüme"],
+    c: 1,
+    e: "Vitamin eksikliği metabolik süreçleri bozar ve hastalıklara yol açar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini bozar?   (Su Kalitesi)",
+    o: ["Oksijen", "Fotosentez", "Temizlik", "Aşırı yemleme"],
+    c: 3,
+    e: "Fazla yem → kirlilik."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünlerinde en önemli kalite kaybı nedenidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Sıcaklık kontrolünün sağlanamaması", "Renk", "Ses", "Işık"],
+    c: 0,
+    e: "Sıcaklık kontrolü bozulursa kalite hızla düşer."
+  },
+  {
+    q: "Balıklarda hastalıkların yayılmasını önlemek için aşağıdakilerden hangisi yapılmalıdır?   (Balık Hastalıkları)",
+    o: ["Karantina uygulamak", "Stresi artırmak", "Yeni balıkları direkt ortama bırakmak", "Aşırı yemleme"],
+    c: 2,
+    e: "Karantina yeni hastalık girişini önler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi karlılığı doğrudan artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Verimli üretim", "Maliyet artışı", "Hastalık", "Stres"],
+    c: 1,
+    e: "Verimlilik artışı maliyeti düşürür, karı artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliğinde en tehlikeli ağır metallerden biridir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Kalsiyum", "Sodyum", "Potasyum", "Cıva"],
+    c: 3,
+    e: "Cıva çok toksiktir ve birikir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri denetiminde kullanılan bir yöntemdir?   (Su Ürünleri Mevzuatı)",
+    o: ["Denetim", "Kontrol", "Hepsi", "Gözlem"],
+    c: 0,
+    e: "Denetimde birden fazla yöntem birlikte kullanılır."
+  },
+  {
+    q: "Balıklarda aşırı yağ birikimi aşağıdakilerden hangisine neden olur?   (Balık Besleme)",
+    o: ["Oksijen artışı", "Sağlık artışı", "Et kalitesinin düşmesi", "Su temizliği"],
+    c: 2,
+    e: "Fazla yağ depo edilir ve et kalitesi düşer."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini bozar?   (Su Kalitesi)",
+    o: ["Fotosentez", "Oksijen", "Temizlik", "Amonyak artışı"],
+    c: 3,
+    e: "Amonyak zararlıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi arzı azaltır?   (Su Ürünleri Ekonomisi)",
+    o: ["Maliyet artışı", "Teknoloji", "Verimlilik", "Üretim artışı"],
+    c: 0,
+    e: "Maliyet yükselirse üretim düşer, arz azalır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda viral hastalıktır?   (Balık Hastalıkları)",
+    o: ["Lernaea", "Aeromonas", "VHS (Viral Hemorajik Septisemi)", "Saprolegnia"],
+    c: 2,
+    e: "VHS viral kaynaklı ciddi bir hastalıktır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi raf ömrünü uzatır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Açık depolama", "Soğutma", "Kir", "Sıcak ortam"],
+    c: 1,
+    e: "Soğutma bozulmayı yavaşlatır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliği kontrolünde kullanılan yöntemdir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Düzensizlik", "Atık bırakma", "Denetimsizlik", "Arıtma"],
+    c: 3,
+    e: "Arıtma sistemleri kirliliği azaltır."
+  },
+  {
+    q: "Balıklarda en hızlı büyüme hangi dönemde gerçekleşir?   (Balık Besleme)",
+    o: ["Açlık", "Hastalık", "Gençlik", "Yaşlılık"],
+    c: 2,
+    e: "Genç balıkların metabolizması daha hızlıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıkçılıkta sürdürülebilirliğin sağlanmasında en etkili yöntemdir?   (Su Ürünleri Mevzuatı)",
+    o: ["Rastgele av", "Bilimsel yönetim", "Aşırı avcılık", "Denetimsizlik"],
+    c: 1,
+    e: "Bilimsel verilere dayalı yönetim sürdürülebilirliği sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini iyileştirir?   (Su Kalitesi)",
+    o: ["Aşırı yemleme", "Kir", "Atık", "Havalandırma"],
+    c: 3,
+    e: "Oksijen artışı kaliteyi artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi uygun depolama koşuludur?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Düşük sıcaklık", "Kirli ortam", "Açık ortam", "Yüksek sıcaklık"],
+    c: 0,
+    e: "Düşük sıcaklık bozulmayı geciktirir."
+  },
+  {
+    q: "Balıklarda hastalıkların önlenmesinde en etkili yöntem aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Beklemek", "Tedavi", "Önleyici uygulamalar", "Rastgele müdahale"],
+    c: 1,
+    e: "Önleme, tedaviden daha etkilidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi biyolojik kirliliğin sonucudur?   (Su Kirliliği ve Kontrolü)",
+    o: ["Sıcaklık artışı", "Tuz oranı", "Metal birikimi", "Hastalık yayılımı"],
+    c: 3,
+    e: "Mikroorganizmalar hastalık oluşturur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi ekonomik kayba neden olur?   (Su Ürünleri Ekonomisi)",
+    o: ["Aşırı yemleme", "Planlama", "Verimlilik", "Dengeli üretim"],
+    c: 0,
+    e: "Yem israfı maliyetleri artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri avcılığında yasak dönemleri ifade eder?   (Su Ürünleri Mevzuatı)",
+    o: ["Kota", "Denetim", "Av yasağı", "Ruhsat"],
+    c: 2,
+    e: "Av yasağı, üreme döneminde stokları korumak için uygulanır."
+  },
+  {
+    q: "Balık yemlerinde bağlayıcı madde olarak genellikle ne kullanılır?   (Balık Besleme)",
+    o: ["Su", "Nişasta", "Tuz", "Kum"],
+    c: 1,
+    e: "Nişasta yemin su içinde dağılmasını önler ve formunu korumasını sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri mevzuatının temel hedeflerinden biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Kaynakları korumak", "İthalat", "Fiyat artırmak", "Ticareti azaltmak"],
+    c: 0,
+    e: "Amaç doğal kaynakların korunmasıdır."
+  },
+  {
+    q: "Balık yemlerinin depolanmasında en önemli faktör aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Renk", "Ses", "Nem kontrolü", "Boyut"],
+    c: 2,
+    e: "Nem, yem bozulmasının en önemli nedenidir. Kuru ortam şarttır."
+  },
+  {
+    q: "Bir balık işletmesinde hastalık nedeniyle %20 ölüm gerçekleşirse bu durum ilk olarak neyi etkiler?   (Su Ürünleri Ekonomisi)",
+    o: ["Sabit maliyetleri", "Geliri", "Ruhsatı", "Bina değerini"],
+    c: 1,
+    e: "Ürün azalır → satış düşer → gelir azalır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kalite kontrol sürecinin amacıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Ürünün uygunluğunu sağlamak", "Reklam yapmak", "Üretimi azaltmak", "Fiyat belirlemek"],
+    c: 0,
+    e: "Amaç ürünün standartlara uygunluğunu sağlamaktır."
+  },
+  {
+    q: "Biyobüyütme (biomagnification) aşağıdakilerden hangisini ifade eder?   (Su Kirliliği ve Kontrolü)",
+    o: ["Besin zincirinde artarak birikme", "Su berraklığı", "Kirliliğin azalması", "Oksijen artışı"],
+    c: 2,
+    e: "Üst trofik seviyede toksin daha fazla olur."
+  },
+  {
+    q: "Balıklarda beyaz benek hastalığında görülen belirti aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Siyah lekeler", "Şişme", "Kızarıklık", "Beyaz noktalar"],
+    c: 3,
+    e: "Hastalık adı gibi beyaz noktalar oluşur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini iyileştirir?   (Su Kalitesi)",
+    o: ["Atık", "Havalandırma", "Kir", "Stres"],
+    c: 1,
+    e: "Havalandırma oksijeni artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi avcılıkta sınırlama türlerinden biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Ses yasağı", "Renk yasağı", "Boy yasağı", "Tat yasağı"],
+    c: 2,
+    e: "Boy yasağı en yaygın düzenlemelerden biridir."
+  },
+  {
+    q: "Balık yemlerinin raf ömrünü en çok etkileyen faktör aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Boyut", "Ses", "Renk", "Nem"],
+    c: 3,
+    e: "Nem, yem bozulmasının en önemli nedenidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi maliyet düşürür?   (Su Ürünleri Ekonomisi)",
+    o: ["Aşırı yemleme", "Verimli üretim", "Hastalık", "Stres"],
+    c: 1,
+    e: "Verimli üretim kaynak kullanımını optimize eder."
+  },
+  {
+    q: "Balık etinin hızlı bozulmasının temel nedeni aşağıdakilerden hangisidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Yüksek su oranı", "Düşük vitamin", "Düşük protein", "Düşük yağ"],
+    c: 0,
+    e: "Yüksek su oranı mikroorganizma gelişimini kolaylaştırır."
+  },
+  {
+    q: "Balıklarda hastalıkların yayılmasını azaltan uygulama aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Stres", "Aşırı stoklama", "Karantina", "Düzensiz yemleme"],
+    c: 2,
+    e: "Karantina bulaşmayı sınırlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi ekosistem üzerinde olumsuz etki yapar?   (Su Kirliliği ve Kontrolü)",
+    o: ["Temiz su", "Fotosentez", "Oksijen", "Kirlilik"],
+    c: 3,
+    e: "Kirlilik ekosistemi bozar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda stres oluşturur?   (Su Kalitesi)",
+    o: ["Ani pH değişimi", "Stabil ortam", "Uygun oksijen", "Temiz su"],
+    c: 0,
+    e: "Ani değişimler stres yaratır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri denetiminin amacıdır?   (Su Ürünleri Mevzuatı)",
+    o: ["İhracat", "Satış artırmak", "Kurallara uyumu sağlamak", "Fiyat düşürmek"],
+    c: 2,
+    e: "Denetim kuralların uygulanmasını sağlar."
+  },
+  {
+    q: "Balıklarda aşırı protein verilmesi aşağıdakilerden hangisine neden olur?   (Balık Besleme)",
+    o: ["Hızlı büyüme", "Maliyet artışı", "Su temizliği", "Vitamin artışı"],
+    c: 1,
+    e: "Protein pahalıdır. Fazlası enerji olarak kullanılır veya atılır, bu da ekonomik kayıp oluşturur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi talep üzerinde etkili değildir?   (Su Ürünleri Ekonomisi)",
+    o: ["Fiyat", "Gelir", "Tüketici tercihi", "Su sıcaklığı"],
+    c: 3,
+    e: "Su sıcaklığı talebi doğrudan etkilemez."
+  },
+  {
+    q: "Aşağıdakilerden hangisi noktasal kirlilik kaynağına örnektir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Kanalizasyon çıkışı", "Tarım", "Yağmur", "Rüzgar"],
+    c: 0,
+    e: "Belirli noktadan çıkan kirliliktir."
+  },
+  {
+    q: "Balıklarda bağışıklık sistemini zayıflatan en önemli faktör aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Dengeli beslenme", "Stres", "Uygun sıcaklık", "Temiz su"],
+    c: 1,
+    e: "Stres bağışıklık sistemini baskılar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünlerinde kaliteyi en hızlı düşürür?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Etiketleme", "Paketleme", "Depolama", "Sıcaklık artışı"],
+    c: 3,
+    e: "Sıcaklık artışı bozulmayı hızlandırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklar için en stresli durumdur?   (Su Kalitesi)",
+    o: ["Temiz su", "Stabil su", "Ani sıcaklık değişimi", "Uygun pH"],
+    c: 2,
+    e: "Ani değişimler balıkları strese sokar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda enerji ihtiyacını düşürür?   (Balık Besleme)",
+    o: ["Düşük sıcaklık", "Hastalık", "Stres", "Yüksek sıcaklık"],
+    c: 0,
+    e: "Düşük sıcaklıkta metabolizma yavaşlar, enerji ihtiyacı azalır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi yasak av araçlarından biri olabilir?   (Su Ürünleri Mevzuatı)",
+    o: ["Olta", "Kepçe", "Zıpkın", "Trol ağı (yasak bölgede)"],
+    c: 3,
+    e: "Trol avcılığı belirli alanlarda yasaktır ve denetime tabidir."
+  },
+  {
+    q: "BOD ve COD birlikte değerlendirildiğinde aşağıdakilerden hangisi anlaşılır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Sıcaklık", "Organik ve kimyasal kirlilik düzeyi", "Suyun rengi", "Tuz oranı"],
+    c: 1,
+    e: "BOD organik, COD kimyasal yükü gösterir."
+  },
+  {
+    q: "Balıklarda solungaç hastalıkları en çok hangi durumu etkiler?   (Balık Hastalıkları)",
+    o: ["Büyüme", "Tat", "Solunum", "Renk"],
+    c: 2,
+    e: "Solungaçlar solunum organıdır, zarar görmesi oksijen alımını düşürür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi talebi azaltır?   (Su Ürünleri Ekonomisi)",
+    o: ["Fiyat artışı", "Üretim artışı", "Teknoloji", "Gelir artışı"],
+    c: 0,
+    e: "Fiyat yükseldikçe talep düşer."
+  },
+  {
+    q: "Aşağıdakilerden hangisi hijyen ihlalidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["El yıkama", "Soğuk zincir", "Temiz ekipman", "Çapraz bulaşma"],
+    c: 3,
+    e: "Çapraz bulaşma ciddi ihlaldir."
+  },
+  {
+    q: "Balık yemlerinde vitaminlerin fazla verilmesi aşağıdakilerden hangisine neden olabilir?   (Balık Besleme)",
+    o: ["Protein artışı", "Sağlık sorunları", "Su temizliği", "Büyüme artışı"],
+    c: 1,
+    e: "Aşırı vitamin bazı durumlarda toksik etki yapabilir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıkçılıkta yasal bir uygulamadır?   (Su Ürünleri Mevzuatı)",
+    o: ["Boy yasağına uyum", "Ruhsatsız av", "Yasak dönemde av", "Kaçak av"],
+    c: 0,
+    e: "Boy yasağına uyum yasal zorunluluktur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklar için uygun ortamdır?   (Su Kalitesi)",
+    o: ["Kirli su", "Ani değişimler", "Stabil su koşulları", "Düşük oksijen"],
+    c: 2,
+    e: "Stabil ortam balık sağlığı için önemlidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi soğuk zincirin temel amacıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Balığı kurutmak", "Rengi değiştirmek", "Tadı artırmak", "Mikroorganizma gelişimini yavaşlatmak"],
+    c: 3,
+    e: "Soğuk zincir bozulmayı geciktirir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda paraziter hastalıklara örnektir?   (Balık Hastalıkları)",
+    o: ["Lernaea", "Columnaris", "Aeromonas", "VHS"],
+    c: 0,
+    e: "Lernaea (çapa kurdu) parazitik bir hastalıktır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi işletme başarısını artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Hastalık", "Denetimsizlik", "Planlama", "Stres"],
+    c: 2,
+    e: "Planlama verimliliği artırır."
+  },
+  {
+    q: "Sudaki çözünmüş oksijenin azalması ilk olarak hangi canlıları etkiler?   (Su Kirliliği ve Kontrolü)",
+    o: ["Bakteriler", "Balıklar", "Algler", "Bitkiler"],
+    c: 1,
+    e: "Balıklar oksijen düşüşüne karşı hassastır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda yem israfını azaltır?   (Balık Besleme)",
+    o: ["Kontrollü yemleme", "Düzensiz yemleme", "Aşırı yemleme", "Rastgele yemleme"],
+    c: 0,
+    e: "Kontrollü yemleme tüketim kadar yem verilmesini sağlar."
+  },
+  {
+    q: "Türkiye’de hamsi için belirlenen minimum avlanma boyu yaklaşık kaç cm’dir?   (Su Ürünleri Mevzuatı)",
+    o: ["12 cm", "5 cm", "9 cm", "7 cm"],
+    c: 2,
+    e: "Hamsi küçük boylu bir türdür ve avlanma alt sınırı yaklaşık 9 cm’dir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesinin biyolojik göstergesidir?   (Su Kalitesi)",
+    o: ["Ses", "Renk", "Işık", "Balık davranışı"],
+    c: 3,
+    e: "Balık davranışı kaliteyi gösterir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünlerinde bozulmanın en önemli nedenidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Yağ", "Mikroorganizmalar", "Vitamin", "Protein"],
+    c: 1,
+    e: "Mikroorganizmalar bozulmanın ana nedenidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi talebi artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Fiyat artışı", "Maliyet artışı", "Gelir artışı", "Üretim düşüşü"],
+    c: 2,
+    e: "Gelir arttıkça tüketim artar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliğini artırır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Atık deşarjı", "Temizlik", "Arıtma", "Denetim"],
+    c: 0,
+    e: "Atıklar suyu kirletir."
+  },
+  {
+    q: "Balıklarda hastalıkların kontrolünde en önemli faktör aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Renk", "Su kalitesi", "Boy", "Ses"],
+    c: 1,
+    e: "Su kalitesi hastalık yönetiminin temelidir."
+  },
+  {
+    q: "Balık yemlerinde kullanılan soya küspesi hangi amaçla kullanılır?   (Balık Besleme)",
+    o: ["Renk vermek için", "Mineral sağlamak için", "Su artırmak için", "Protein kaynağı olarak"],
+    c: 3,
+    e: "Soya küspesi bitkisel protein kaynağıdır ve yem formülasyonunda yaygın kullanılır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi yasaklı bir davranıştır?   (Su Ürünleri Mevzuatı)",
+    o: ["Denetime katılmak", "Boy yasağına uymak", "Kaçak avcılık", "Ruhsat almak"],
+    c: 2,
+    e: "Kaçak avcılık mevzuata aykırıdır."
+  },
+  {
+    q: "Nitrit (NO2) aşağıdakilerden hangisine neden olur?   (Su Kalitesi)",
+    o: ["Oksijen artışı", "Kan zehirlenmesi", "Tuz artışı", "pH artışı"],
+    c: 0,
+    e: "Nitrit balık kanında oksijen taşınmasını engeller."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kaliteyi en hızlı düşüren faktördür?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Paketleme", "Depolama", "Etiketleme", "Sıcaklık artışı"],
+    c: 3,
+    e: "Sıcaklık artışı bozulmayı hızlandırır."
+  },
+  {
+    q: "Balıklarda görülen “beyaz benek” hastalığı en çok hangi ortamda hızla yayılır?   (Balık Hastalıkları)",
+    o: ["Dengeli beslenme", "Ani sıcaklık değişimlerinde", "Stabil ortam", "Temiz su"],
+    c: 1,
+    e: "Ani sıcaklık değişimleri bağışıklığı düşürür ve hastalığı artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesi parametresi değildir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Sıcaklık", "Oksijen", "Ses", "pH"],
+    c: 2,
+    e: "Ses su kalitesi parametresi değildir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi üretimde verimliliği düşürür?   (Su Ürünleri Ekonomisi)",
+    o: ["Hastalık", "Teknoloji", "Planlama", "Eğitim"],
+    c: 0,
+    e: "Hastalık üretim kaybına neden olur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri yönetiminin temelidir?   (Su Ürünleri Mevzuatı)",
+    o: ["Rastgele av", "Sürdürülebilirlik", "Aşırı av", "Denetimsizlik"],
+    c: 1,
+    e: "Tüm sistem sürdürülebilirlik üzerine kuruludur."
+  },
+  {
+    q: "Balıklarda düşük sıcaklıkta aşağıdakilerden hangisi görülür?   (Balık Besleme)",
+    o: ["Yem tüketimi artar", "Metabolizma hızlanır", "Büyüme hızlanır", "Metabolizma yavaşlar"],
+    c: 3,
+    e: "Düşük sıcaklık metabolizmayı yavaşlatır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda büyümeyi olumsuz etkiler?   (Balık Besleme)",
+    o: ["Yeterli oksijen", "Dengeli beslenme", "Aşırı stoklama", "Uygun sıcaklık"],
+    c: 2,
+    e: "Aşırı stoklama stres ve rekabet oluşturur, büyümeyi düşürür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri avcılığında kontrol mekanizmasıdır?   (Su Ürünleri Mevzuatı)",
+    o: ["Satış", "Denetim", "Depolama", "Pazarlama"],
+    c: 1,
+    e: "Denetim kurallara uyulmasını sağlar."
+  },
+  {
+    q: "Balıklarda mantar enfeksiyonları en çok hangi bölgede görülür?   (Balık Hastalıkları)",
+    o: ["Kas", "Kemik", "Solungaç", "Deri"],
+    c: 3,
+    e: "Mantar enfeksiyonları genellikle deri üzerinde görülür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi gelir artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Üretim artışı", "Stres", "Maliyet artışı", "Hastalık"],
+    c: 0,
+    e: "Üretim arttıkça satış ve gelir artar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi yayılı (diffüz) kirlilik kaynağıdır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Arıtma tesisi", "Tarım alanları", "Fabrika", "Kanalizasyon"],
+    c: 1,
+    e: "Tarımsal akış geniş alana yayılır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıkta kalite kaybı oluşturur?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Paketleme", "Soğuk zincir", "Temizlik", "Sıcaklık artışı"],
+    c: 3,
+    e: "Sıcaklık artışı bozulmayı hızlandırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi çözünmüş oksijen seviyesini en hızlı artırır?   (Su Kalitesi)",
+    o: ["Organik kirlilik", "Aşırı yemleme", "Havalandırma", "Sıcaklık artışı"],
+    c: 2,
+    e: "Havalandırma oksijen sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balık yemlerinin enerji içeriğini artırır?   (Balık Besleme)",
+    o: ["Yağ", "Mineral", "Su", "Vitamin"],
+    c: 0,
+    e: "Yağ, yüksek kalorili olduğu için enerji içeriğini yükseltir."
+  },
+  {
+    q: "Levrek için minimum avlanma boyu yaklaşık kaç cm’dir?   (Su Ürünleri Mevzuatı)",
+    o: ["25 cm", "40 cm", "18 cm", "30 cm"],
+    c: 3,
+    e: "Levrek için yasal alt sınır yaklaşık 30 cm’dir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi iyi hijyen uygulamasıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Açık depolama", "Ekipman temizliği yapmak", "Kirli su kullanmak", "Çiğ ve pişmiş ürünleri birlikte saklamak"],
+    c: 1,
+    e: "Temiz ekipman hijyenin temelidir."
+  },
+  {
+    q: "Balıklarda solungaç hastalığı hangi sistemi etkiler?   (Balık Hastalıkları)",
+    o: ["Sinir", "Sindirim", "Solunum", "Dolaşım"],
+    c: 2,
+    e: "Solungaçlar solunum organıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi işletme gideridir?   (Su Ürünleri Ekonomisi)",
+    o: ["Maliyet", "Gelir", "Kar", "Talep"],
+    c: 0,
+    e: "Maliyet işletme gideridir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini doğrudan artırır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Tarım ilaçları", "Sanayi atıkları", "Atık deşarjı", "Arıtma sistemleri"],
+    c: 3,
+    e: "Arıtma suyu temizler."
+  },
+  {
+    q: "Çözünmüş oksijenin düşmesi aşağıdakilerden hangisine neden olur?   (Su Kalitesi)",
+    o: ["Balık ölümleri", "Bitki artışı", "Balık artışı", "Su berraklığı"],
+    c: 2,
+    e: "Oksijen azalınca balıklar yaşayamaz."
+  },
+  {
+    q: "Balıklarda düşük oksijen seviyesinde aşağıdakilerden hangisi görülür?   (Balık Besleme)",
+    o: ["Yem tüketimi azalır", "Protein artar", "Büyüme hızlanır", "Yem tüketimi artar"],
+    c: 0,
+    e: "Düşük oksijen stres oluşturur ve balıkların yem alımı azalır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kaçak avcılığın sonuçlarından biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Ödül", "Ceza", "Teşvik", "Destek"],
+    c: 1,
+    e: "Kaçak avcılık cezai yaptırım gerektirir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi HACCP sisteminde “önleyici yaklaşım” anlamına gelir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Rastgele kontrol", "Risk oluşmadan kontrol", "Bozulduktan sonra müdahale", "Satış sonrası denetim"],
+    c: 2,
+    e: "HACCP’in mantığı önceden önlem almaktır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi işletmede verimlilik artışının sonucudur?   (Su Ürünleri Ekonomisi)",
+    o: ["Maliyet artışı", "Talep azalması", "Üretim düşüşü", "Kar artışı"],
+    c: 0,
+    e: "Verimlilik maliyeti düşürür → kar artar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi toksik etki oluşturur?   (Su Kirliliği ve Kontrolü)",
+    o: ["Oksijen", "Su", "Işık", "Ağır metal"],
+    c: 3,
+    e: "Ağır metaller zehirlidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda stres belirtisidir?   (Balık Hastalıkları)",
+    o: ["Normal iştah", "Düzensiz yüzme", "Dengeli davranış", "Normal yüzme"],
+    c: 1,
+    e: "Düzensiz yüzme stres ve hastalık göstergesidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini düşürür?   (Su Kalitesi)",
+    o: ["Temizlik", "Arıtma", "Organik yük artışı", "Oksijen"],
+    c: 2,
+    e: "Organik yük kirliliği artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri mevzuatına aykırı bir durumdur?   (Su Ürünleri Mevzuatı)",
+    o: ["Ruhsatlı avcılık", "Minimum boya uymak", "Denetime uymak", "Yasak dönemde avcılık"],
+    c: 3,
+    e: "Yasak dönemde avcılık cezai işlem gerektirir."
+  },
+  {
+    q: "Balıklarda yemleme sırasında dikkat edilmesi gereken en önemli unsur aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Işık", "Tüketim miktarı", "Ses", "Renk"],
+    c: 1,
+    e: "Tüketim takibi ile doğru yemleme yapılır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda hastalık riskini azaltır?   (Balık Hastalıkları)",
+    o: ["Temiz su", "Düzensiz yemleme", "Aşırı stoklama", "Stres"],
+    c: 0,
+    e: "Temiz su sağlıklı ortam sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi taze balıkta bulunmaz?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Parlak göz", "Sert et", "Kötü koku", "Canlı renk"],
+    c: 2,
+    e: "Kötü koku bozulma belirtisidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi üretim planlamasının temel amacıdır?   (Su Ürünleri Ekonomisi)",
+    o: ["Maliyet artırmak", "Rastgele üretim", "İş yükünü artırmak", "Kaynakları etkin kullanmak"],
+    c: 3,
+    e: "Amaç kaynakları en verimli şekilde kullanmaktır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliğinin en önemli kaynağıdır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Rüzgar", "İnsan faaliyetleri", "Doğal süreçler", "Güneş"],
+    c: 1,
+    e: "Kirliliğin büyük kısmı insan kaynaklıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda iştahsızlığa neden olabilir?   (Balık Besleme)",
+    o: ["Stres", "Yeterli oksijen", "Dengeli yem", "Uygun sıcaklık"],
+    c: 0,
+    e: "Stres, balıkların yem tüketimini azaltır. Bu durum büyümeyi olumsuz etkiler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi avcılıkta yasaklı dönemlerin uygulanma nedenidir?   (Su Ürünleri Mevzuatı)",
+    o: ["Ticaret", "İhracat", "Vergi", "Üreme dönemi"],
+    c: 3,
+    e: "Üreme döneminde av yasağı uygulanır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi çözünmüş oksijeni artırır?   (Su Kalitesi)",
+    o: ["Atık", "Organik kirlilik", "Fotosentez", "Sıcaklık artışı"],
+    c: 1,
+    e: "Bitkiler oksijen üretir."
+  },
+  {
+    q: "Balıklarda hastalıkların önlenmesinde en etkili yöntem aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Bekleme", "Rastgele müdahale", "Koruyucu önlemler", "Tedavi"],
+    c: 2,
+    e: "Hastalık oluşmadan önlem almak en etkili yöntemdir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi tarımsal kirlilik kaynağıdır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Gübre", "Fabrika", "Arıtma tesisi", "Sanayi"],
+    c: 0,
+    e: "Gübreler azot-fosfor içerir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kimyasal kontaminasyona örnektir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Mikroorganizma", "Ağır metal", "Mantar", "Parazit"],
+    c: 1,
+    e: "Ağır metaller kimyasal kirleticidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi maliyet artışına neden olur?   (Su Ürünleri Ekonomisi)",
+    o: ["Planlama", "Verimlilik", "Eğitim", "Aşırı yemleme"],
+    c: 3,
+    e: "Yem israfı maliyetleri artırır."
+  },
+  {
+    q: "Balıklarda en uygun yemleme zamanı genellikle aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Öğle saatleri", "Gece", "Sabah ve akşam", "Rastgele"],
+    c: 2,
+    e: "Sabah ve akşam saatleri balıkların daha aktif olduğu dönemlerdir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri mevzuatında yasaklı davranışlardan biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Boy yasağına uymamak", "Kurallara uymak", "Denetime uymak", "Ruhsat almak"],
+    c: 0,
+    e: "Boy yasağı ihlali cezai yaptırıma tabidir."
+  },
+  {
+    q: "Sıcaklık artışı aşağıdakilerden hangisini etkiler?   (Su Kalitesi)",
+    o: ["Ses", "Renk", "Işık", "Oksijen çözünürlüğü"],
+    c: 3,
+    e: "Sıcaklık arttıkça oksijen düşer."
+  },
+  {
+    q: "Balıklarda hastalıkların yayılmasını önlemek için aşağıdakilerden hangisi yapılmalıdır?   (Balık Hastalıkları)",
+    o: ["Yeni balıkları direkt ortama katmak", "Karantina uygulamak", "Stresi artırmak", "Aşırı yemleme"],
+    c: 1,
+    e: "Karantina hastalık girişini engeller."
+  },
+  {
+    q: "Aşağıdakilerden hangisi HACCP sisteminin amacıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Fiyat belirlemek", "İhracatı artırmak", "Gıda güvenliğini sağlamak", "Üretimi azaltmak"],
+    c: 2,
+    e: "HACCP riskleri önceden kontrol eder."
+  },
+  {
+    q: "Aşağıdakilerden hangisi ağır metal kirliliğine karşı alınacak önlemdir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Arıtma", "Denetimsizlik", "Rastgele kullanım", "Atık bırakmak"],
+    c: 0,
+    e: "Arıtma ile ağır metaller azaltılır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi üretimi azaltır?   (Su Ürünleri Ekonomisi)",
+    o: ["Eğitim", "Hastalık", "Planlama", "Teknoloji"],
+    c: 1,
+    e: "Hastalık üretim kaybına neden olur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi avcılıkta kullanılan yasal araçlardan biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Zehir", "Patlayıcı", "Olta", "Dinamit"],
+    c: 2,
+    e: "Olta yasal bir av aracıdır."
+  },
+  {
+    q: "Yemlerin suya dayanıklılığı neden önemlidir?   (Balık Besleme)",
+    o: ["Dağılmayı önlemek için", "Oksijen artırmak için", "Renk artırmak için", "Tat vermek için"],
+    c: 0,
+    e: "Yem su içinde dağılırsa besin kaybı olur ve su kirlenir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini artırır?   (Su Kalitesi)",
+    o: ["Kir", "Aşırı yemleme", "Atık", "Havalandırma"],
+    c: 3,
+    e: "Havalandırma oksijen sağlar."
+  },
+  {
+    q: "Balıklarda mantar hastalıkları genellikle hangi durumda ortaya çıkar?   (Balık Hastalıkları)",
+    o: ["Sağlıklı ortamda", "Yüksek oksijende", "Yaralanma ve stres durumunda", "Düşük sıcaklıkta"],
+    c: 2,
+    e: "Mantarlar genellikle yaralı veya zayıf balıklarda gelişir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi üretimi artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Teknoloji", "Denetimsizlik", "Hastalık", "Stres"],
+    c: 0,
+    e: "Teknoloji üretim verimini artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi soğuk zincirin kırılması durumunda ilk etkilenen özelliktir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Renk", "Tat", "Boy", "Mikrobiyal yük"],
+    c: 3,
+    e: "Sıcaklık artınca mikroorganizmalar hızla çoğalır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliğinin biyolojik etkisidir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Renk değişimi", "Canlı ölümleri", "Ses artışı", "Sıcaklık artışı"],
+    c: 1,
+    e: "Kirlilik canlı yaşamını etkiler."
+  },
+  {
+    q: "Aşağıdaki türlerden hangisinde minimum av boyu uygulanmasının temel nedeni daha geç eşeysel olgunluğa ulaşmasıdır?   (Su Ürünleri Mevzuatı)",
+    o: ["Sardalya", "İstavrit", "Kalkan", "Hamsi"],
+    c: 2,
+    e: "Kalkan gibi türler geç olgunlaşır, bu yüzden korunmaları gerekir."
+  },
+  {
+    q: "Balıklarda stres aşağıdakilerden hangisine neden olur?   (Balık Besleme)",
+    o: ["Büyüme artar", "Yem tüketimi artar", "Yem tüketimi azalır", "Protein artar"],
+    c: 0,
+    e: "Stres iştahı düşürür ve büyümeyi yavaşlatır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri stoklarını azaltır?   (Su Ürünleri Mevzuatı)",
+    o: ["Planlı av", "Yasaklar", "Denetim", "Aşırı avcılık"],
+    c: 3,
+    e: "Aşırı avcılık stokları hızla azaltır."
+  },
+  {
+    q: "Balık yemlerinin suya atıldıktan sonra dağılması aşağıdakilerden hangisine neden olur?   (Balık Besleme)",
+    o: ["Oksijen artışı", "Su kalitesinin iyileşmesi", "Balık büyümesi", "Besin kaybı"],
+    c: 1,
+    e: "Dağılan yem tüketilmeden kaybolur ve suyu kirletir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi fiziksel kirlilik örneğidir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Çamur ve askıda katı madde", "Bakteri", "Ağır metal", "Virüs"],
+    c: 0,
+    e: "Askıda katılar fiziksel kirliliktir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi üretim artışına neden olur?   (Su Ürünleri Ekonomisi)",
+    o: ["Stres", "Hastalık", "Teknoloji", "Denetimsizlik"],
+    c: 2,
+    e: "Teknoloji verimliliği artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda bağışıklığı güçlendirir?   (Balık Hastalıkları)",
+    o: ["Aşırı stoklama", "Dengeli beslenme", "Stres", "Düşük oksijen"],
+    c: 1,
+    e: "Dengeli beslenme bağışıklık sistemini destekler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi iyi üretim uygulaması (GMP) kapsamındadır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Düzensiz üretim", "Kirli ekipman", "Çapraz bulaşma", "Personel eğitimi"],
+    c: 3,
+    e: "Eğitim hijyenin temelidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklar için toksiktir?   (Su Kalitesi)",
+    o: ["Işık", "Oksijen", "Amonyak", "Su"],
+    c: 2,
+    e: "Amonyak zehirlidir."
+  },
+  {
+    q: "Türkiye’de levrek balığı için minimum av boyu uygulaması hangi amaca hizmet eder?   (Su Ürünleri Mevzuatı)",
+    o: ["İhracatı artırmak", "Üreme şansı vermek", "Ticareti azaltmak", "Fiyat yükseltmek"],
+    c: 0,
+    e: "Balığın en az bir kez üremesini sağlamak amaçlanır."
+  },
+  {
+    q: "Balıklarda büyümenin en önemli göstergesi aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Boy", "Canlı ağırlık artışı", "Su seviyesi", "Renk"],
+    c: 1,
+    e: "Canlı ağırlık artışı büyümenin en net ölçüsüdür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi gıda güvenliği açısından en önemli kriterdir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Renk", "Boy", "Tat", "Mikrobiyal güvenlik"],
+    c: 3,
+    e: "En kritik unsur mikrobiyal güvenliktir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi biyolojik kirlilik kaynağıdır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Cam", "Bakteri", "Metal", "Plastik"],
+    c: 2,
+    e: "Mikroorganizmalar biyolojik kirleticidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi sabit maliyetlerin özelliğidir?   (Su Ürünleri Ekonomisi)",
+    o: ["Üretimden bağımsızdır", "Her zaman düşer", "Üretime bağlı değişir", "Sürekli artar"],
+    c: 0,
+    e: "Sabit maliyet üretimden bağımsızdır."
+  },
+  {
+    q: "Balıklarda hastalıkların ortaya çıkmasında en önemli faktör aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Işık", "Yüksek protein", "Ses", "Stres ve kötü su koşulları"],
+    c: 3,
+    e: "Stres ve kötü su kalitesi bağışıklığı düşürür, hastalık riskini artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini belirler?   (Su Kalitesi)",
+    o: ["Renk", "Oksijen", "Ses", "Işık"],
+    c: 1,
+    e: "Oksijen en kritik parametredir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda büyüme performansını en iyi gösterir?   (Balık Besleme)",
+    o: ["Su seviyesi", "Renk", "Canlı ağırlık artışı", "Boy"],
+    c: 2,
+    e: "Canlı ağırlık artışı büyümenin en net göstergesidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıkçılıkta yasaklı bir davranıştır?   (Su Ürünleri Mevzuatı)",
+    o: ["Ruhsat almak", "Denetime katılmak", "Boy yasağına uymak", "Kaçak av"],
+    c: 3,
+    e: "Kaçak avcılık cezai işlem gerektirir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünlerinde kalite kontrolün ilk aşamasıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Satış", "Hammadde kontrolü", "Paketleme", "Reklam"],
+    c: 1,
+    e: "Kalite, ham maddeden başlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda viral hastalıkların özelliğidir?   (Balık Hastalıkları)",
+    o: ["Hızlı yayılım", "Kolay kontrol", "Zararsızlık", "Antibiyotikle tedavi"],
+    c: 0,
+    e: "Viral hastalıklar hızlı yayılır ve tedavisi zordur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi arzı azaltır?   (Su Ürünleri Ekonomisi)",
+    o: ["Eğitim", "Teknoloji", "Hastalık", "Planlama"],
+    c: 2,
+    e: "Hastalık üretimi düşürür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini belirler?   (Su Kirliliği ve Kontrolü)",
+    o: ["Ses", "Renk", "Işık", "Oksijen"],
+    c: 3,
+    e: "Oksijen su kalitesinin temel göstergesidir."
+  },
+  {
+    q: "Balıklar için en uygun pH aralığı aşağıdakilerden hangisine en yakındır?   (Su Kalitesi)",
+    o: ["6.5–8.5", "2–4", "4–5", "9–11"],
+    c: 1,
+    e: "Çoğu balık nötr civarında yaşar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda büyümeyi artırır?   (Balık Besleme)",
+    o: ["Dengeli beslenme", "Stres", "Düşük oksijen", "Yetersiz yem"],
+    c: 0,
+    e: "Dengeli beslenme büyümenin temel şartıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri mevzuatının kapsamına girer?   (Su Ürünleri Mevzuatı)",
+    o: ["Sadece satış", "Sadece avcılık", "Avcılık ve yetiştiricilik", "Sadece ihracat"],
+    c: 2,
+    e: "Mevzuat hem avcılığı hem yetiştiriciliği kapsar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kaliteyi belirleyen en önemli unsurdur?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Ses", "Tazelik", "Renk", "Işık"],
+    c: 1,
+    e: "Tazelik temel kalite kriteridir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliğinin etkisidir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Ekosistem bozulması", "Balık sayısının artması", "Oksijen artışı", "Su kalitesinin artması"],
+    c: 0,
+    e: "Kirlilik ekosistemi bozar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda bakteriyel enfeksiyon belirtisidir?   (Balık Hastalıkları)",
+    o: ["Renk artışı", "Hızlı büyüme", "Yara ve ülser oluşumu", "Oksijen artışı"],
+    c: 2,
+    e: "Bakteriyel enfeksiyonlar genellikle yara ve ülser oluşturur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi değişken maliyetlerin artmasına neden olur?   (Su Ürünleri Ekonomisi)",
+    o: ["Planlama", "Eğitim", "Teknoloji", "Üretim artışı"],
+    c: 3,
+    e: "Üretim arttıkça yem gibi değişken maliyetler artar."
+  },
+  {
+    q: "Balık yemlerinde kullanılan katkı maddeleri aşağıdakilerden hangisini destekler?   (Balık Besleme)",
+    o: ["Su", "Sindirim", "Renk", "Ses"],
+    c: 1,
+    e: "Katkılar sindirimi ve bağırsak sağlığını destekler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri denetimini destekler?   (Su Ürünleri Mevzuatı)",
+    o: ["Kurallara uyum", "Denetimsizlik", "Kaçak avcılık", "Rastgele av"],
+    c: 0,
+    e: "Kurallara uyum denetimin etkinliğini artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi amonyak oluşumunun kaynağıdır?   (Su Kalitesi)",
+    o: ["Işık", "Oksijen", "Balık dışkısı ve yem artığı", "Fotosentez"],
+    c: 3,
+    e: "Organik atıklar amonyağa dönüşür."
+  },
+  {
+    q: "Talep artarsa aşağıdakilerden hangisi gerçekleşir?   (Su Ürünleri Ekonomisi)",
+    o: ["Üretim azalır", "Fiyat düşer", "Maliyet düşer", "Fiyat artar"],
+    c: 1,
+    e: "Talep artışı genellikle fiyatları yükseltir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi çözünmüş oksijenin azalmasına neden olur?   (Su Kirliliği ve Kontrolü)",
+    o: ["Organik kirlilik", "Temiz su", "Soğuk ortam", "Fotosentez"],
+    c: 0,
+    e: "Organik madde parçalanırken oksijen tüketilir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kaliteyi düşürür?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Paketleme", "Hijyen", "Çapraz bulaşma", "Soğuk zincir"],
+    c: 2,
+    e: "Çapraz bulaşma kaliteyi bozar."
+  },
+  {
+    q: "Balıklarda solungaç parazitleri aşağıdakilerden hangisine neden olur?   (Balık Hastalıkları)",
+    o: ["Tat artışı", "Renk değişimi", "Protein artışı", "Solunum güçlüğü"],
+    c: 3,
+    e: "Solungaç parazitleri oksijen alımını zorlaştırır."
+  },
+  {
+    q: "Levrek balığının minimum avlanma boyu yaklaşık kaç cm’dir?   (Su Ürünleri Mevzuatı)",
+    o: ["30 cm", "20 cm", "40 cm", "25 cm"],
+    c: 0,
+    e: "Levrek için minimum av boyu yaklaşık 30 cm’dir."
+  },
+  {
+    q: "Balıklarda yemleme sırasında yapılan en büyük hata aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Uygun ortam", "Kontrollü yemleme", "Aşırı yemleme", "Dengeli yem"],
+    c: 2,
+    e: "Aşırı yemleme hem maliyet hem su kalitesi açısından zararlıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balık sağlığını korur?   (Su Kalitesi)",
+    o: ["Amonyak", "Düşük oksijen", "Ani değişimler", "Stabil ortam"],
+    c: 3,
+    e: "Stabil su koşulları sağlıklı ortamdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi bozulmayı artırır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Paketleme", "Sıcak ortam", "Hijyen", "Soğuk ortam"],
+    c: 1,
+    e: "Sıcaklık artışı bozulmayı hızlandırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi eutrofikasyon sonucu oluşur?   (Su Kirliliği ve Kontrolü)",
+    o: ["Oksijen artışı", "Alg patlaması", "Sıcaklık düşmesi", "Tuz azalması"],
+    c: 0,
+    e: "Alg artışı en tipik sonuçtur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi talebi azaltır?   (Su Ürünleri Ekonomisi)",
+    o: ["Gelir artışı", "Teknoloji", "Fiyat artışı", "Üretim artışı"],
+    c: 2,
+    e: "Fiyat yükseldikçe talep azalır."
+  },
+  {
+    q: "Balıklarda hastalıkların en önemli çevresel nedeni aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Işık", "Su kalitesi", "Ses", "Renk"],
+    c: 1,
+    e: "Su kalitesi hastalık oluşumunu belirler."
+  },
+  {
+    q: "Balıklarda optimum büyüme için aşağıdakilerden hangisi gereklidir?   (Balık Besleme)",
+    o: ["Düşük oksijen", "Açlık", "Yüksek stres", "Dengeli beslenme"],
+    c: 3,
+    e: "Dengeli beslenme, tüm besin öğelerinin doğru oranlarda alınmasını sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi sürdürülebilir balıkçılık açısından en doğrudur?   (Su Ürünleri Mevzuatı)",
+    o: ["Üreme döneminde av yapmak", "Denetimden kaçmak", "Küçük balıkları avlamak", "Boy ve zaman yasaklarına uymak"],
+    c: 2,
+    e: "Kurallara uyum stokların devamlılığını sağlar."
+  },
+  {
+    q: "pH değeri aşağıdakilerden hangisini ifade eder?   (Su Kalitesi)",
+    o: ["Tuz oranı", "Asitlik-bazlık durumu", "Sıcaklık", "Oksijen miktarı"],
+    c: 1,
+    e: "pH suyun asidik veya bazik olduğunu gösterir."
+  },
+  {
+    q: "Balık işleme tesislerinde personel hijyeninin sağlanmaması hangi sonucu doğurur?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Raf ömrü uzaması", "Maliyet düşüşü", "Gıda kontaminasyonu", "Verim artışı"],
+    c: 3,
+    e: "Personel hijyeni bozulursa bulaşma olur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda viral hastalık örneğidir?   (Balık Hastalıkları)",
+    o: ["VHS", "Lernaea", "Aeromonas", "Columnaris"],
+    c: 0,
+    e: "VHS viral hastalıktır."
+  },
+  {
+    q: "COD (Kimyasal Oksijen İhtiyacı) neyi ifade eder?   (Su Kirliliği ve Kontrolü)",
+    o: ["pH değerini", "Kimyasal maddelerin oksijen tüketimini", "Suyun sıcaklığını", "Tuz miktarını"],
+    c: 1,
+    e: "COD, kimyasal olarak oksitlenen maddelerin oksijen ihtiyacını gösterir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi işletmede karı azaltır?   (Su Ürünleri Ekonomisi)",
+    o: ["Planlama", "Eğitim", "Verimlilik", "Aşırı yemleme"],
+    c: 3,
+    e: "Aşırı yemleme maliyeti artırır ve karı düşürür."
+  },
+  {
+    q: "Hamsi balığında minimum av boyu uygulaması aşağıdakilerden hangisi ile doğrudan ilişkilidir?   (Su Ürünleri Mevzuatı)",
+    o: ["Üreme büyüklüğü", "Su sıcaklığı", "Balığın rengi", "Oksijen"],
+    c: 2,
+    e: "Minimum boy, balığın üreme olgunluğuna ulaşması ile ilişkilidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi yem tüketimini azaltır?   (Balık Besleme)",
+    o: ["Hastalık", "Dengeli yem", "Yüksek oksijen", "Uygun sıcaklık"],
+    c: 0,
+    e: "Hastalık durumunda balıklar yem alımını azaltır."
+  },
+  {
+    q: "Vitamin eksikliği balıklarda aşağıdakilerden hangisine yol açar?   (Balık Besleme)",
+    o: ["Oksijen artışı", "Hızlı büyüme", "Su artışı", "Hastalık ve deformasyon"],
+    c: 3,
+    e: "Vitaminler metabolik süreçlerde görev alır. Eksiklikleri sağlık sorunlarına neden olur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri mevzuatının amacıdır?   (Su Ürünleri Mevzuatı)",
+    o: ["Fiyat artırmak", "Kaynakları korumak", "İthalatı artırmak", "Ticareti azaltmak"],
+    c: 1,
+    e: "Amaç doğal kaynakların sürdürülebilir kullanımıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıkta bozulma belirtisidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Canlı renk", "Parlak deri", "Kötü koku", "Sert et"],
+    c: 2,
+    e: "Kötü koku bozulmanın en belirgin işaretidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda parazit enfeksiyonu belirtisidir?   (Balık Hastalıkları)",
+    o: ["Normal yüzme", "Dengeli hareket", "Hızlı büyüme", "Kaşınma davranışı"],
+    c: 0,
+    e: "Parazitli balıklar genellikle yüzeylere sürtünür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi üretim verimliliğini artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Stres", "Düzensizlik", "Hastalık", "Eğitim"],
+    c: 3,
+    e: "Eğitim üretim kalitesini artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi noktasal kirlilik kaynağıdır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Yağmur", "Rüzgar", "Tarım", "Fabrika çıkışı"],
+    c: 2,
+    e: "Belirli bir noktadan gelen kirliliktir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklar için uygun ortamdır?   (Su Kalitesi)",
+    o: ["Stabil su", "Düşük oksijen", "Ani değişim", "Kirli su"],
+    c: 0,
+    e: "Stabil ortam sağlıklıdır."
+  },
+  {
+    q: "Balık yemlerinin pelet halinde olması ne sağlar?   (Balık Besleme)",
+    o: ["Enerjiyi azaltır", "Tüketimi zorlaştırır", "Dağılmayı artırır", "Kullanım kolaylığı sağlar"],
+    c: 1,
+    e: "Pelet yemler kolay tüketilir ve daha az israf olur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri yetiştiriciliğinde izin gerektirir?   (Su Ürünleri Mevzuatı)",
+    o: ["Balık tutma", "Hobi", "Ticari üretim", "Spor"],
+    c: 2,
+    e: "Ticari yetiştiricilik faaliyetleri izin ve ruhsata tabidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliğini azaltır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Arıtma sistemleri", "Tarım ilaçları", "Sanayi atıkları", "Atık bırakmak"],
+    c: 0,
+    e: "Arıtma en temel çözümdür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda hastalıkların yayılmasını yavaşlatır?   (Balık Hastalıkları)",
+    o: ["Stres", "Aşırı stoklama", "Düzensiz yemleme", "Karantina"],
+    c: 3,
+    e: "Karantina bulaşmayı sınırlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi gelir artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Stres", "Üretim artışı", "Hastalık", "Maliyet artışı"],
+    c: 1,
+    e: "Üretim arttıkça satış artar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kalite kaybının ilk belirtisidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Koku değişimi", "Sertleşme", "Tat artışı", "Renk artışı"],
+    c: 0,
+    e: "Koku değişimi erken bozulma göstergesidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini belirler?   (Su Kalitesi)",
+    o: ["Ses", "Renk", "Işık", "Oksijen"],
+    c: 3,
+    e: "Oksijen en kritik parametredir."
+  },
+  {
+    q: "Balık yemlerinde protein kalitesini artıran en önemli unsur aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Su", "Amino asit dengesi", "Ses", "Renk"],
+    c: 1,
+    e: "Amino asit dengesi protein kalitesini belirler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi avcılıkta yasaklı yöntemlerden biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Zıpkın", "Ağ", "Dinamit kullanımı", "Olta"],
+    c: 2,
+    e: "Patlayıcı kullanımı çevreye zarar verdiği için yasaktır."
+  },
+  {
+    q: "Karlılık aşağıdakilerden hangisi ile hesaplanır?   (Su Ürünleri Ekonomisi)",
+    o: ["Fiyat - maliyet", "Üretim - satış", "Talep - arz", "Gelir - gider"],
+    c: 3,
+    e: "Kar, gelir ile gider arasındaki farktır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi sucul canlılar için en kritik parametredir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Ses", "Çözünmüş oksijen", "Işık", "Renk"],
+    c: 1,
+    e: "Oksijen düşerse balıklar ölür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünlerinde kaliteyi belirleyen faktördür?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Tazelik", "Işık", "Renk", "Ses"],
+    c: 0,
+    e: "Tazelik kaliteyi belirleyen en önemli unsurdur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda bakteriyel hastalık örneğidir?   (Balık Hastalıkları)",
+    o: ["Lernaea", "Saprolegnia", "Aeromonas", "VHS"],
+    c: 2,
+    e: "Aeromonas bakteriyel enfeksiyondur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklar için toksik değildir?   (Su Kalitesi)",
+    o: ["Amonyak", "Ağır metal", "Nitrit", "Oksijen"],
+    c: 3,
+    e: "Oksijen yaşam için gereklidir."
+  },
+  {
+    q: "Balıklarda büyüme ve doku yapımında en önemli besin öğesi aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Su", "Protein", "Mineral", "Vitamin"],
+    c: 1,
+    e: "Protein, kas ve doku oluşumunun temel yapı taşıdır. Eksikliği büyümeyi doğrudan sınırlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balık stoklarını korumaya yönelik bir uygulamadır?   (Su Ürünleri Mevzuatı)",
+    o: ["Denetimsizlik", "Aşırı av", "Boy sınırlaması", "Rastgele av"],
+    c: 2,
+    e: "Boy sınırlaması en temel koruma yöntemlerinden biridir."
+  },
+  {
+    q: "Eutrofikasyon aşağıdakilerden hangisini ifade eder?   (Su Kirliliği ve Kontrolü)",
+    o: ["Besin maddesi artışıyla alg patlaması", "Su sıcaklığının düşmesi", "pH düşmesi", "Tuz oranının artması"],
+    c: 0,
+    e: "Azot-fosfor artışı → alg patlaması → oksijen azalır."
+  },
+  {
+    q: "Balıklarda parazitlerin yayılmasını hızlandıran faktör aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Dengeli beslenme", "Temiz su", "Düşük yoğunluk", "Kötü su koşulları"],
+    c: 3,
+    e: "Kötü koşullar parazit çoğalmasını artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kalite kaybına neden olur?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Temizlik", "Hijyen", "Sıcaklık artışı", "Soğuk zincir"],
+    c: 2,
+    e: "Sıcaklık artışı bozulmayı hızlandırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi üretim kararlarını etkileyen ekonomik faktördür?   (Su Ürünleri Ekonomisi)",
+    o: ["Fiyat", "Renk", "Işık", "Ses"],
+    c: 0,
+    e: "Fiyat üretim kararını doğrudan etkiler."
+  },
+  {
+    q: "Balık yemlerinde kullanılan karbonhidratların temel görevi aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Protein sağlamak", "Enerji sağlamak", "Su artırmak", "Vitamin üretmek"],
+    c: 1,
+    e: "Karbonhidratlar enerji sağlar ve protein tasarrufu oluşturur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri yönetiminde temel ilkedir?   (Su Ürünleri Mevzuatı)",
+    o: ["Rastgele avcılık", "Aşırı üretim", "Denetimsizlik", "Sürdürülebilirlik"],
+    c: 3,
+    e: "Sürdürülebilirlik temel yaklaşımdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi çözünmüş oksijen seviyesini azaltır?   (Su Kalitesi)",
+    o: ["Temiz su", "Fotosentez", "Sıcaklık artışı", "Bitkiler"],
+    c: 2,
+    e: "Sıcaklık arttıkça oksijen düşer."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliği yönetiminin temel amacıdır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Ticareti artırmak", "Su kaynaklarını korumak", "Fiyat artırmak", "Üretim artırmak"],
+    c: 1,
+    e: "Amaç su kaynaklarını sürdürülebilir şekilde korumaktır."
+  },
+  {
+    q: "Su ürünlerinde hijyenin temel amacı aşağıdakilerden hangisidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Fiyatı yükseltmek", "Üretimi artırmak", "İhracatı artırmak", "Tüketici sağlığını korumak"],
+    c: 3,
+    e: "Hijyenin temel amacı gıda güvenliğini sağlamak ve insan sağlığını korumaktır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda mantar hastalıklarının oluşumunu kolaylaştırır?   (Balık Hastalıkları)",
+    o: ["Yaralanma", "Yüksek oksijen", "Temiz su", "Sağlıklı deri"],
+    c: 0,
+    e: "Yaralanmış dokular mantar gelişimine açık hale gelir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi işletmede sabit maliyet örneğidir?   (Su Ürünleri Ekonomisi)",
+    o: ["İlaç", "Yem", "Kira", "Enerji"],
+    c: 2,
+    e: "Kira üretim miktarına bağlı değildir, sabit maliyettir."
+  },
+  {
+    q: "Balık yemlerinde sindirilebilirlik neden önemlidir?   (Balık Besleme)",
+    o: ["Suyu artırmak için", "Besinlerin daha iyi kullanılmasını sağlamak için", "Daha fazla atık üretmek için", "Renk için"],
+    c: 1,
+    e: "Sindirilebilir yemler daha iyi değerlendirilir ve büyüme artar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi ruhsatsız avcılığın sonucudur?   (Su Ürünleri Mevzuatı)",
+    o: ["Ceza", "Destek", "Teşvik", "Ödül"],
+    c: 0,
+    e: "Ruhsatsız faaliyetler cezai yaptırıma tabidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini doğrudan etkiler?   (Su Kalitesi)",
+    o: ["Işık", "Ses", "pH", "Renk"],
+    c: 2,
+    e: "pH önemli bir parametredir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda hastalık oluşumunu artırır?   (Balık Hastalıkları)",
+    o: ["Temiz su", "Stres", "Uygun sıcaklık", "Dengeli beslenme"],
+    c: 1,
+    e: "Stres bağışıklığı düşürür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi bozulmayı hızlandırır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Temizlik", "Soğuk depolama", "Hijyen", "Yüksek sıcaklık"],
+    c: 3,
+    e: "Sıcaklık arttıkça mikroorganizma artar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi maliyetleri artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Aşırı yemleme", "Teknoloji", "Verimlilik", "Planlama"],
+    c: 0,
+    e: "Gereksiz yem kullanımı maliyeti artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliğini azaltır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Sanayi", "Atık deşarjı", "Arıtma", "Tarım ilacı"],
+    c: 2,
+    e: "Arıtma kirliliği düşürür."
+  },
+  {
+    q: "Balık yemlerinde kullanılan en pahalı bileşen genellikle hangisidir?   (Balık Besleme)",
+    o: ["Su", "Tuz", "Mineral", "Protein kaynakları"],
+    c: 3,
+    e: "Protein kaynakları (balık unu vb.) maliyetin büyük kısmını oluşturur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi avcılıkta yasak getirilen alanlardan biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Kıyıya yakın alanlar", "Açık deniz", "Derin deniz", "Uluslararası sular"],
+    c: 0,
+    e: "Kıyıya yakın alanlar genellikle koruma altındadır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi amonyağın daha az zararlı formudur?   (Su Kalitesi)",
+    o: ["NO3", "NO2", "NH4⁺", "NH3"],
+    c: 2,
+    e: "Amonyum (NH4⁺) daha az toksiktir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi sabit maliyettir?   (Su Ürünleri Ekonomisi)",
+    o: ["Elektrik", "Kira", "İlaç", "Yem"],
+    c: 1,
+    e: "Kira üretimden bağımsızdır."
+  },
+  {
+    q: "Balık ürünlerinde en hızlı bozulma aşağıdaki hangi sıcaklık aralığında gerçekleşir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["0°C", "-5°C", "5–25°C", "-18°C"],
+    c: 3,
+    e: "Ilık sıcaklıklar bakteriler için en uygun ortamdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi biyolojik kirleticidir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Plastik", "Bakteri", "Metal", "Cam"],
+    c: 0,
+    e: "Mikroorganizmalar biyolojik kirleticidir."
+  },
+  {
+    q: "Balıklarda viral hastalıkların tedavisi neden zordur?   (Balık Hastalıkları)",
+    o: ["Zararsızdır", "Antibiyotik etkisizdir", "Yavaş yayılır", "Kolay yayılmaz"],
+    c: 1,
+    e: "Virüslere karşı antibiyotik etkili değildir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balık yemlerinin raf ömrünü uzatır?   (Balık Besleme)",
+    o: ["Su", "Nem", "Güneş ışığı", "Serin ve kuru ortam"],
+    c: 3,
+    e: "Kuru ve serin ortamda saklanan yem daha uzun süre bozulmadan kalır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri avcılığında kota uygulamasının amacıdır?   (Su Ürünleri Mevzuatı)",
+    o: ["İhracatı artırmak", "Fiyat artırmak", "Stokları korumak", "Ticareti azaltmak"],
+    c: 2,
+    e: "Kota, belirli miktarın üzerinde avlanmayı sınırlandırarak stokların korunmasını sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıkçılıkta sürdürülebilirliği tehdit eder?   (Su Ürünleri Mevzuatı)",
+    o: ["Aşırı av", "Yasaklar", "Planlı av", "Denetim"],
+    c: 0,
+    e: "Aşırı avcılık stokları azaltır."
+  },
+  {
+    q: "Balıklarda protein tasarrufu sağlayan besin öğesi aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Vitamin", "Yağ", "Mineral", "Su"],
+    c: 1,
+    e: "Yağ, enerji ihtiyacını karşılayarak proteinin büyüme için kullanılmasını sağlar."
+  },
+  {
+    q: "Balıklarda solungaç hastalığı aşağıdaki hangi sistemi etkiler?   (Balık Hastalıkları)",
+    o: ["Sindirim", "Sinir", "Solunum", "Dolaşım"],
+    c: 2,
+    e: "Solungaçlar solunum organıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliğinin ekonomik sonucudur?   (Su Kirliliği ve Kontrolü)",
+    o: ["Balıkçılık kayıpları", "Oksijen artışı", "Üretim artışı", "Su kalitesi artışı"],
+    c: 0,
+    e: "Kirlilik ekonomik kayıplara yol açar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi gelir artışına neden olur?   (Su Ürünleri Ekonomisi)",
+    o: ["Stres", "Üretim artışı", "Maliyet artışı", "Hastalık"],
+    c: 1,
+    e: "Üretim arttıkça satış ve gelir artar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi raf ömrünü uzatır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Sıcak ortam", "Açık depolama", "Kirli ortam", "Soğuk zincir"],
+    c: 3,
+    e: "Soğuk zincir bozulmayı yavaşlatır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini iyileştirir?   (Su Kalitesi)",
+    o: ["Arıtma", "Stres", "Kir", "Atık"],
+    c: 0,
+    e: "Arıtma suyu temizler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıkçılıkta koruma alanlarının oluşturulma nedenidir?   (Su Ürünleri Mevzuatı)",
+    o: ["Ticaret", "Fiyat artırmak", "Üreme alanlarını korumak", "İhracat"],
+    c: 2,
+    e: "Koruma alanları üreme bölgelerini korur."
+  },
+  {
+    q: "Balık yemlerinin kalitesini düşüren en önemli faktör aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Dengeli içerik", "Uygun depolama", "Tazelik", "Küflenme"],
+    c: 3,
+    e: "Küflenmiş yem hem besin değerini hem sağlığı olumsuz etkiler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kirlilik kontrolünde önemlidir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Denetimsizlik", "Arıtma", "Rastgele kullanım", "Atık bırakma"],
+    c: 1,
+    e: "Arıtma temel çözümdür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi üretim maliyetini artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Hastalık", "Eğitim", "Planlama", "Teknoloji"],
+    c: 0,
+    e: "Hastalık üretim kaybı ve maliyet artışı oluşturur."
+  },
+  {
+    q: "Balıkta rigor mortis (ölüm sertliği) sürecinin uzaması aşağıdakilerden hangisini gösterir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Bozulmanın hızlandığını", "Protein azaldığını", "Tazeliğin daha uzun sürdüğünü", "Yağ oranının arttığını"],
+    c: 2,
+    e: "Rigor süresinin uzun olması balığın daha taze kaldığını gösterir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda hastalık riskini artırır?   (Balık Hastalıkları)",
+    o: ["Dengeli yem", "Temiz su", "Aşırı stoklama", "Düşük stok"],
+    c: 1,
+    e: "Yoğunluk arttıkça bulaşma kolaylaşır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesinin temelini oluşturur?   (Su Kalitesi)",
+    o: ["Işık", "Renk", "Ses", "Oksijen ve denge"],
+    c: 3,
+    e: "Oksijen + stabil denge = sağlıklı su."
+  },
+  {
+    q: "Balık yemlerinde kullanılan balık yağı aşağıdakilerden hangisini sağlar?   (Balık Besleme)",
+    o: ["Enerji", "Mineral", "Su", "Protein"],
+    c: 0,
+    e: "Balık yağı yüksek enerji içerir ve büyümeyi destekler."
+  },
+  {
+    q: "Mezgit balığında minimum avlanma boyu aşağıdakilerden hangisine en yakındır?   (Su Ürünleri Mevzuatı)",
+    o: ["10 cm", "13 cm", "25 cm", "20 cm"],
+    c: 1,
+    e: "Mezgit için alt sınır yaklaşık 13 cm civarındadır."
+  },
+  {
+    q: "Balıkta kötü koku oluşumunun temel nedeni aşağıdakilerden hangisidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Vitamin artışı", "Protein sentezi", "Oksijen fazlalığı", "Mikroorganizmaların faaliyetleri"],
+    c: 3,
+    e: "Mikroorganizmalar bozunma ürünleri oluşturur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi işletme başarısını artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Stres", "Hastalık", "Planlama", "Denetimsizlik"],
+    c: 2,
+    e: "Planlama verimliliği artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kirlilik göstergesidir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Yüksek BOD", "Düşük bakteri", "Temiz su", "Yüksek oksijen"],
+    c: 0,
+    e: "Yüksek BOD kirli suyu gösterir."
+  },
+  {
+    q: "Balıklarda viral hastalıkların yayılmasını önlemede aşağıdakilerden hangisi etkilidir?   (Balık Hastalıkları)",
+    o: ["Antibiyotik", "Karantina", "Aşırı yemleme", "Stres"],
+    c: 1,
+    e: "Karantina bulaşmayı önler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini stabilize eder?   (Su Kalitesi)",
+    o: ["Stres", "Aşırı yemleme", "Düzenli su değişimi", "Ani değişim"],
+    c: 2,
+    e: "Kontrollü su değişimi kaliteyi korur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi ruhsatsız avcılığın sonucudur?   (Su Ürünleri Mevzuatı)",
+    o: ["Ceza", "Ödül", "Teşvik", "Destek"],
+    c: 0,
+    e: "Ruhsatsız avcılık yasal yaptırıma tabidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda büyümeyi hızlandırır?   (Balık Besleme)",
+    o: ["Düşük oksijen", "Hastalık", "Stres", "Dengeli beslenme"],
+    c: 3,
+    e: "Dengeli beslenme büyüme performansını artırır."
+  },
+  {
+    q: "Balıklarda dış parazitlerin yayılmasını hızlandıran faktör aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Temiz su", "Dengeli beslenme", "Kötü su kalitesi", "Düşük yoğunluk"],
+    c: 2,
+    e: "Kötü su koşulları parazit gelişimini artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balık fiyatlarının yükselmesine neden olur?   (Su Ürünleri Ekonomisi)",
+    o: ["Talep artışı", "Arz artışı", "Teknoloji", "Üretim artışı"],
+    c: 0,
+    e: "Talep artarsa fiyat yükselir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi uygun depolama koşuludur?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Yüksek sıcaklık", "Düşük sıcaklık", "Kirli ortam", "Açık ortam"],
+    c: 1,
+    e: "Düşük sıcaklık bozulmayı geciktirir."
+  },
+  {
+    q: "BOD değerinin yüksek olması aşağıdakilerden hangisini gösterir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Düşük sıcaklık", "Temiz su", "Organik kirlilik", "Yüksek oksijen"],
+    c: 3,
+    e: "Yüksek BOD = yüksek organik madde = kirli su."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda büyümeyi olumsuz etkileyen bir faktördür?   (Balık Besleme)",
+    o: ["Uygun sıcaklık", "Dengeli yem", "Aşırı stoklama", "Yeterli oksijen"],
+    c: 2,
+    e: "Aşırı stoklama rekabet ve stres oluşturur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi yasadışı avcılık kapsamına girer?   (Su Ürünleri Mevzuatı)",
+    o: ["Ruhsatlı avcılık", "Yasak dönemde avcılık", "Denetime uymak", "Boy yasağına uymak"],
+    c: 1,
+    e: "Yasak dönemde yapılan avcılık mevzuata aykırıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklar için stres oluşturur?   (Su Kalitesi)",
+    o: ["Stabil ortam", "Temiz su", "Uygun oksijen", "Ani pH değişimi"],
+    c: 3,
+    e: "Ani değişimler stres oluşturur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi marjinal maliyet artışına neden olur?   (Su Ürünleri Ekonomisi)",
+    o: ["Sabit maliyet", "Bina", "Ek üretim yapmak", "Ruhsat"],
+    c: 0,
+    e: "Ek üretim her ilave birimde maliyet oluşturur."
+  },
+  {
+    q: "COD değerinin yüksek olması aşağıdakilerden hangisini gösterir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Yüksek oksijen", "Temiz su", "Yüksek kimyasal kirlilik", "Düşük kirlilik"],
+    c: 2,
+    e: "COD yüksekse su kimyasal olarak kirlenmiştir."
+  },
+  {
+    q: "Balıklarda bakteriyel enfeksiyonların yayılmasını artıran en önemli faktör aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Düşük stok yoğunluğu", "Dengeli beslenme", "Temiz ortam", "Kötü su kalitesi"],
+    c: 3,
+    e: "Kötü su kalitesi patojenlerin çoğalmasını kolaylaştırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi uygun hijyen davranışıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Eldivensiz çalışmak", "El yıkamak", "Çapraz bulaşma", "Kirli ortamda çalışmak"],
+    c: 1,
+    e: "El hijyeni en temel uygulamadır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri stoklarının azalmasına neden olur?   (Su Ürünleri Mevzuatı)",
+    o: ["Aşırı avcılık", "Denetim", "Yasaklar", "Kontrollü avcılık"],
+    c: 0,
+    e: "Aşırı avcılık stokların tükenmesine yol açar."
+  },
+  {
+    q: "Balık yemlerinde protein kaynaklarının pahalı olmasının nedeni aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Kolay bulunması", "Renk", "Yüksek besin değeri", "Su içeriği"],
+    c: 2,
+    e: "Yüksek kaliteli protein kaynakları üretimi zor ve maliyetlidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su sıcaklığının artmasıyla gerçekleşir?   (Su Kalitesi)",
+    o: ["pH sabit kalır", "Oksijen artar", "Tuz azalır", "Oksijen azalır"],
+    c: 1,
+    e: "Sıcaklık arttıkça oksijen çözünürlüğü düşer."
+  },
+  {
+    q: "Aşağıdakilerden hangisi sucul canlılar için en kritik sınır parametredir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Işık", "Ses", "Renk", "Çözünmüş oksijen"],
+    c: 3,
+    e: "Oksijen kritik eşik altına düşerse yaşam durur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi gıda güvenliği sistemidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Arz", "Pazarlama", "HACCP", "Talep"],
+    c: 2,
+    e: "HACCP risk kontrol sistemidir."
+  },
+  {
+    q: "Balıklarda hastalıkların en önemli çevresel nedeni aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Su kalitesi", "Işık", "Ses", "Renk"],
+    c: 0,
+    e: "Su kalitesi hastalık oluşumunu belirler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi arzı azaltır?   (Su Ürünleri Ekonomisi)",
+    o: ["Verimlilik", "Teknoloji", "Üretim artışı", "Maliyet artışı"],
+    c: 3,
+    e: "Maliyet arttıkça üretici daha az üretir."
+  },
+  {
+    q: "Balıklarda yem tüketimini en çok azaltan durum aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Temiz su", "Hastalık", "Uygun sıcaklık", "Dengeli yem"],
+    c: 1,
+    e: "Hastalık durumunda balıkların iştahı belirgin şekilde düşer."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıkçılıkta koruma sağlar?   (Su Ürünleri Mevzuatı)",
+    o: ["Boy sınırlaması", "Denetimsizlik", "Rastgele av", "Aşırı av"],
+    c: 0,
+    e: "Boy sınırlaması stokların korunmasını sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklar için uygun değildir?   (Su Kalitesi)",
+    o: ["Temiz su", "Uygun pH", "Stabil ortam", "Düşük oksijen"],
+    c: 3,
+    e: "Düşük oksijen ölümcül olabilir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kirlilik göstergesidir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Düşük bakteri", "Yüksek BOD", "Oksijen fazlalığı", "Temiz su"],
+    c: 1,
+    e: "BOD yüksekse kirlilik vardır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi değişken maliyettir?   (Su Ürünleri Ekonomisi)",
+    o: ["Kira", "Bina", "Yem", "Ruhsat"],
+    c: 2,
+    e: "Yem üretim miktarına bağlı olarak değişir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi gıda güvenliği açısından en riskli durumdur?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Çapraz bulaşma", "Soğuk depolama", "Etiketleme", "Paketleme"],
+    c: 0,
+    e: "Çapraz bulaşma doğrudan hastalık riskidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda hastalıkların yayılmasını azaltır?   (Balık Hastalıkları)",
+    o: ["Stres", "Aşırı stoklama", "Düzensiz yemleme", "Karantina"],
+    c: 3,
+    e: "Karantina bulaşmayı sınırlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi yem israfını azaltır?   (Balık Besleme)",
+    o: ["Düzensiz yemleme", "Kontrollü yemleme", "Aşırı yemleme", "Rastgele yemleme"],
+    c: 1,
+    e: "Kontrollü yemleme, tüketim kadar yem verilmesini sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri mevzuatına aykırıdır?   (Su Ürünleri Mevzuatı)",
+    o: ["Kurallara uyum", "Denetime katılma", "Yasak dönemde av", "Ruhsatlı av"],
+    c: 2,
+    e: "Yasak dönemde avcılık yasaktır."
+  },
+  {
+    q: "Kalkan balığında minimum avlanma boyu aşağıdakilerden hangisine en yakındır?   (Su Ürünleri Mevzuatı)",
+    o: ["60 cm", "30 cm", "20 cm", "45 cm"],
+    c: 3,
+    e: "Kalkan balığı için minimum boy yaklaşık 45 cm’dir."
+  },
+  {
+    q: "Balıklarda optimum büyüme için aşağıdakilerden hangisi gereklidir?   (Balık Besleme)",
+    o: ["Yüksek stres", "Dengeli beslenme", "Düşük oksijen", "Açlık"],
+    c: 1,
+    e: "Dengeli beslenme tüm besin öğelerinin doğru oranlarda alınmasını sağlar."
+  },
+  {
+    q: "Balıklarda hastalıkların erken teşhisi neden önemlidir?   (Balık Hastalıkları)",
+    o: ["Yayılmayı önlemek", "Balık sayısını azaltmak", "Maliyeti artırmak", "Üretimi durdurmak"],
+    c: 0,
+    e: "Erken teşhis hastalığın yayılmasını önler."
+  },
+  {
+    q: "BOD ve COD birlikte değerlendirildiğinde aşağıdakilerden hangisi anlaşılır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Su rengi", "Sıcaklık", "Kirliliğin türü ve seviyesi", "Tuz oranı"],
+    c: 2,
+    e: "Organik ve kimyasal kirlilik birlikte analiz edilir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi arzı artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Hastalık", "Stres", "Maliyet artışı", "Teknolojik gelişme"],
+    c: 3,
+    e: "Teknoloji üretimi artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi hijyen uygulamasıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Düzensiz üretim", "Temiz çalışma ortamı", "Kirli ekipman", "Aşırı stoklama"],
+    c: 1,
+    e: "Hijyen temiz ortam gerektirir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklar için en tehlikeli durumdur?   (Su Kalitesi)",
+    o: ["Düşük oksijen", "Yüksek oksijen", "Temiz su", "Uygun pH"],
+    c: 0,
+    e: "Oksijen düşerse ölüm olur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri yetiştiriciliğinde izin gerektirir?   (Su Ürünleri Mevzuatı)",
+    o: ["Bireysel tüketim", "Sportif avcılık", "Ticari yetiştiricilik", "Hobi balıkçılığı"],
+    c: 2,
+    e: "Ticari faaliyetler izin ve ruhsata tabidir."
+  },
+  {
+    q: "Balıklarda yemleme sıklığı arttıkça aşağıdakilerden hangisi sağlanır?   (Balık Besleme)",
+    o: ["Hastalık", "Daha dengeli beslenme", "Oksijen azalması", "Su kirlenmesi"],
+    c: 1,
+    e: "Doğru planlandığında sık yemleme daha dengeli beslenme sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi sabit maliyet örneğidir?   (Su Ürünleri Ekonomisi)",
+    o: ["Kira", "Yem", "Elektrik", "İşçilik"],
+    c: 0,
+    e: "Kira üretim miktarından bağımsızdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda stres belirtisi değildir?   (Balık Hastalıkları)",
+    o: ["Düzensiz yüzme", "İştahsızlık", "Aktif yüzme", "Solungaç hareketinde artış"],
+    c: 2,
+    e: "Aktif yüzme genellikle sağlıklı durumu gösterir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliği kontrolünde en etkili yöntemdir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Rastgele kullanım", "Atık bırakmak", "Denetimsizlik", "Arıtma"],
+    c: 3,
+    e: "Arıtma sistemleri temel çözümdür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi bozulma belirtisidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Sert et", "Kötü koku", "Canlı renk", "Parlak göz"],
+    c: 1,
+    e: "Kötü koku bozulma işaretidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi oksijen seviyesini düşürür?   (Su Kalitesi)",
+    o: ["Soğuk ortam", "Temiz su", "Organik atıklar", "Fotosentez"],
+    c: 2,
+    e: "Organik madde oksijen tüketir."
+  },
+  {
+    q: "Balıklarda aşırı stoklama aşağıdakilerden hangisine neden olur?   (Balık Besleme)",
+    o: ["Büyüme artışı", "Su temizliği", "Oksijen artışı", "Stres"],
+    c: 3,
+    e: "Aşırı stoklama rekabet ve stres oluşturur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri koruma yöntemlerinden biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Denetimsizlik", "Yasak dönem", "Aşırı av", "Rastgele av"],
+    c: 1,
+    e: "Yasak dönemler stokları korumak için uygulanır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi ekonomik verimliliği artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Planlı üretim", "Stres", "Denetimsizlik", "Rastgele üretim"],
+    c: 0,
+    e: "Planlı üretim kaynakların doğru kullanılmasını sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kirlilik kaynağı değildir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Sanayi", "Atık su", "Arıtma tesisi", "Tarım"],
+    c: 2,
+    e: "Arıtma tesisleri kirliliği azaltır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kaliteyi korur?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Sıcaklık artışı", "Kir", "Stres", "Temizlik"],
+    c: 3,
+    e: "Temizlik kaliteyi korur."
+  },
+  {
+    q: "Balıklarda hastalıkların yayılmasını önlemek için aşağıdakilerden hangisi yapılmalıdır?   (Balık Hastalıkları)",
+    o: ["Karantina uygulamak", "Stresi artırmak", "Yeni balıkları direkt ortama bırakmak", "Aşırı yemleme"],
+    c: 0,
+    e: "Karantina bulaşıcı hastalıkları engeller."
+  },
+  {
+    q: "pH yükseldiğinde amonyak dengesi nasıl değişir?   (Su Kalitesi)",
+    o: ["NH4⁺ artar", "Sabit kalır", "NH3 artar", "Azalır"],
+    c: 2,
+    e: "Yüksek pH → daha toksik NH3 artar."
+  },
+  {
+    q: "Balık yemlerinde kullanılan katkı maddeleri aşağıdakilerden hangisini iyileştirmek için kullanılır?   (Balık Besleme)",
+    o: ["Rengi", "Görünümü", "Su miktarını", "Sindirimi"],
+    c: 3,
+    e: "Katkı maddeleri (enzim, probiyotik vb.) sindirimi artırarak yemden yararlanmayı iyileştirir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri koruma yöntemlerinden biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Yasak dönem", "Rastgele av", "Aşırı av", "Denetimsizlik"],
+    c: 0,
+    e: "Yasak dönemler stokların korunmasını sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi işletme gelirini doğrudan etkiler?   (Su Ürünleri Ekonomisi)",
+    o: ["Işık", "Ses", "Üretim miktarı", "Su sıcaklığı"],
+    c: 2,
+    e: "Üretim miktarı satış gelirini belirler."
+  },
+  {
+    q: "Sudaki çözünmüş oksijenin azalması neye neden olur?   (Su Kirliliği ve Kontrolü)",
+    o: ["Balık ölümleri", "Balık artışı", "Su berraklığı", "Bitki artışı"],
+    c: 1,
+    e: "Oksijen düşerse canlılar yaşayamaz."
+  },
+  {
+    q: "Balıklarda hastalıkların önlenmesinde en önemli yaklaşım aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Bekleme", "Önleyici uygulamalar", "Rastgele müdahale", "Tedavi"],
+    c: 3,
+    e: "Önleme tedaviden daha etkilidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi gıda güvenliğini tehdit eder?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Çapraz bulaşma", "Temizlik", "Hijyen", "Soğuk zincir"],
+    c: 0,
+    e: "Çapraz bulaşma ciddi risk oluşturur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri stoklarının korunmasına yardımcı olur?   (Su Ürünleri Mevzuatı)",
+    o: ["Rastgele av", "Planlı av", "Aşırı av", "Denetimsizlik"],
+    c: 1,
+    e: "Planlı avcılık sürdürülebilirliği sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi yem maliyetini düşürmeye yardımcı olur?   (Balık Besleme)",
+    o: ["Aşırı yemleme", "Gereğinden fazla protein kullanımı", "Küflenmiş yem kullanımı", "Dengeli rasyon hazırlanması"],
+    c: 3,
+    e: "Dengeli rasyon, gereksiz maliyetleri azaltır ve verimi artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesinin kimyasal parametresidir?   (Su Kalitesi)",
+    o: ["Oksijen", "Işık", "pH", "Ses"],
+    c: 2,
+    e: "pH kimyasal parametredir."
+  },
+  {
+    q: "Arz kavramı aşağıdakilerden hangisini ifade eder?   (Su Ürünleri Ekonomisi)",
+    o: ["Fiyat", "Üretici miktarı", "Tüketici talebi", "Satın alma gücü"],
+    c: 1,
+    e: "Arz, üreticinin piyasaya sunduğu mal miktarıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi güvenli gıda üretimi sağlar?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Stres", "Düzensizlik", "Kir", "Hijyen"],
+    c: 3,
+    e: "Hijyen olmazsa güvenli gıda olmaz."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda stres kaynağı değildir?   (Balık Hastalıkları)",
+    o: ["Temiz su", "Düşük oksijen", "Aşırı stoklama", "Ani sıcaklık değişimi"],
+    c: 0,
+    e: "Temiz su stres oluşturmaz, aksine iyidir."
+  },
+  {
+    q: "BOD (Biyokimyasal Oksijen İhtiyacı) neyi ifade eder?   (Su Kirliliği ve Kontrolü)",
+    o: ["pH değerini", "Suyun sıcaklığını", "Mikroorganizmaların oksijen tüketimini", "Tuz miktarını"],
+    c: 2,
+    e: "BOD arttıkça sudaki oksijen tüketimi artar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kaliteli bir yemin özelliğidir?   (Balık Besleme)",
+    o: ["Dengesiz içerik", "Yüksek sindirilebilirlik", "Küflenmiş olması", "Aşırı nemli olması"],
+    c: 1,
+    e: "Sindirilebilirliği yüksek yemler daha iyi değerlendirilir ve büyümeyi artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri mevzuatının en temel amacıdır?   (Su Ürünleri Mevzuatı)",
+    o: ["Kaynakları korumak ve sürdürülebilirliği sağlamak", "Ticareti artırmak", "İthalat", "Fiyat yükseltmek"],
+    c: 0,
+    e: "Mevzuatın ana amacı doğal kaynakların korunmasıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi pH’ın yükselmesine neden olur?   (Su Kalitesi)",
+    o: ["Asidik maddeler", "Oksijen", "Bazik maddeler", "Su"],
+    c: 2,
+    e: "Bazik maddeler pH’ı yükseltir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi biyolojik kirliliğe neden olur?   (Su Kirliliği ve Kontrolü)",
+    o: ["Cam", "Plastik", "Bakteri", "Metal"],
+    c: 3,
+    e: "Mikroorganizmalar biyolojik kirliliktir."
+  },
+  {
+    q: "Balıklarda mantar enfeksiyonları en çok hangi koşullarda görülür?   (Balık Hastalıkları)",
+    o: ["Sağlıklı ortam", "Yaralı ve zayıf balıklarda", "Yüksek oksijen", "Dengeli beslenme"],
+    c: 0,
+    e: "Mantarlar fırsatçı patojenlerdir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi hijyen kurallarına aykırıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["El yıkamak", "Temiz ekipman", "Kirli ortam", "Soğuk depolama"],
+    c: 2,
+    e: "Kirli ortam hijyene aykırıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi ekonomik kayıp oluşturur?   (Su Ürünleri Ekonomisi)",
+    o: ["Teknoloji", "Aşırı yemleme", "Planlama", "Eğitim"],
+    c: 1,
+    e: "Yem israfı doğrudan kayıptır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi sürdürülebilir balıkçılık için gereklidir?   (Su Ürünleri Mevzuatı)",
+    o: ["Planlı avcılık", "Denetimsizlik", "Aşırı avcılık", "Rastgele av"],
+    c: 0,
+    e: "Planlı ve kontrollü avcılık sürdürülebilirliği sağlar."
+  },
+  {
+    q: "Balık yemlerinde protein kalitesini belirleyen en önemli unsur aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Boyut", "Nem", "Amino asit dengesi", "Renk"],
+    c: 2,
+    e: "Protein kalitesi, içerdiği amino asitlerin dengesi ile belirlenir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi çözünmüş oksijen seviyesini azaltır?   (Su Kalitesi)",
+    o: ["Temiz su", "Bitkiler", "Fotosentez", "Sıcaklık artışı"],
+    c: 3,
+    e: "Sıcaklık arttıkça oksijen azalır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünlerinde güvenli tüketim için gereklidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Açık depolama", "Soğuk zincir", "Düzensiz üretim", "Kirli ortam"],
+    c: 1,
+    e: "Soğuk zincir olmazsa güvenli gıda olmaz."
+  },
+  {
+    q: "Aşağıdakilerden hangisi yayılı kirlilik kaynağıdır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Tarım alanı", "Arıtma tesisi", "Kanalizasyon", "Fabrika"],
+    c: 0,
+    e: "Tarım alanlarından gelen kirlilik yayılıdır."
+  },
+  {
+    q: "Balıklarda bakteriyel hastalıkların tedavisinde genellikle hangi yöntem kullanılır?   (Balık Hastalıkları)",
+    o: ["Vitamin", "Su artırma", "Işık", "Antibiyotik"],
+    c: 3,
+    e: "Bakteriyel enfeksiyonlar antibiyotiklerle kontrol altına alınabilir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi ekonomik planlamanın sonucudur?   (Su Ürünleri Ekonomisi)",
+    o: ["Maliyet artışı", "Verim artışı", "Kaynak israfı", "Düzensizlik"],
+    c: 1,
+    e: "Planlama verimliliği artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda enerji ihtiyacını artırır?   (Balık Besleme)",
+    o: ["Yüksek sıcaklık", "Uygun ortam", "Düşük sıcaklık", "Dengeli yem"],
+    c: 2,
+    e: "Sıcaklık arttıkça metabolizma hızlanır ve enerji ihtiyacı artar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi denetim faaliyetlerinin temel amacıdır?   (Su Ürünleri Mevzuatı)",
+    o: ["Kurallara uyumu sağlamak", "Balık fiyatlarını düşürmek", "Üretimi azaltmak", "Satışı artırmak"],
+    c: 0,
+    e: "Denetim, mevzuata uyulup uyulmadığını kontrol etmek için yapılır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıkçılıkta sürdürülebilirliği artırır?   (Su Ürünleri Mevzuatı)",
+    o: ["Denetimsizlik", "Üreme dönemine uymak", "Küçük balık avlamak", "Aşırı avcılık"],
+    c: 1,
+    e: "Üreme dönemine uyum stokların devamını sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balık yemlerinde kullanılan katkı maddelerinden biridir?   (Balık Besleme)",
+    o: ["Kum", "Taş", "Metal", "Probiyotik"],
+    c: 3,
+    e: "Probiyotikler sindirimi destekler ve bağırsak sağlığını iyileştirir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi işletmede zarar oluşmasına neden olur?   (Su Ürünleri Ekonomisi)",
+    o: ["Dengeli üretim", "Planlama", "Gelirin giderden fazla olması", "Giderin gelirden fazla olması"],
+    c: 2,
+    e: "Gider > gelir ise zarar oluşur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi çözünmüş oksijen seviyesini artırır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Organik kirlilik", "BOD artışı", "Fotosentez", "Atık su"],
+    c: 0,
+    e: "Bitkiler oksijen üretir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda mantar hastalığına örnektir?   (Balık Hastalıkları)",
+    o: ["VHS", "Lernaea", "Aeromonas", "Saprolegnia"],
+    c: 3,
+    e: "Saprolegnia mantar hastalığıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kaliteyi korur?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Kir", "Temizlik", "Düzensizlik", "Sıcaklık artışı"],
+    c: 1,
+    e: "Temizlik kaliteyi korur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi pH’ın düşmesine neden olur?   (Su Kalitesi)",
+    o: ["Oksijen", "Bazik maddeler", "Asidik maddeler", "Işık"],
+    c: 2,
+    e: "Asitler pH’ı düşürür."
+  },
+  {
+    q: "Balıkların enerji ihtiyacını en çok etkileyen faktör aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Su sıcaklığı", "pH", "Işık", "Tuz"],
+    c: 0,
+    e: "Sıcaklık arttıkça metabolizma hızlanır ve enerji ihtiyacı yükselir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri koruma yöntemlerinden biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Denetimsizlik", "Av yasağı", "Rastgele av", "Aşırı av"],
+    c: 1,
+    e: "Av yasakları stokları korur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi değişken maliyet örneğidir?   (Su Ürünleri Ekonomisi)",
+    o: ["Bina", "Ruhsat", "Kira", "Yem"],
+    c: 3,
+    e: "Yem üretime bağlı değişir."
+  },
+  {
+    q: "Balıklarda viral hastalıkların en önemli özelliği aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Antibiyotikle iyileşme", "Zararsız olması", "Hızlı yayılım", "Kolay tedavi"],
+    c: 2,
+    e: "Viral hastalıklar hızla yayılır ve tedavisi zordur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi HACCP sisteminde kritik kontrol noktasıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Paketleme", "Riskli aşama", "Satış", "Temizlik"],
+    c: 1,
+    e: "Kritik noktalar riskin kontrol edildiği aşamalardır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliğine neden olan kaynaklardan biridir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Yağmur", "Rüzgar", "Güneş", "Sanayi atıkları"],
+    c: 3,
+    e: "Sanayi atıkları en önemli kirletici kaynaklardandır."
+  },
+  {
+    q: "Amonyak (NH3) toksisitesi aşağıdakilerden hangisi arttıkça yükselir?   (Su Kalitesi)",
+    o: ["Sıcaklık ve pH", "Sertlik", "Tuz", "Oksijen"],
+    c: 0,
+    e: "pH ve sıcaklık arttıkça toksik NH3 formu artar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıkçılıkta sürdürülebilirliği artırır?   (Su Ürünleri Mevzuatı)",
+    o: ["Aşırı av", "Planlı av", "Rastgele av", "Denetimsizlik"],
+    c: 1,
+    e: "Planlı avcılık stokların devamını sağlar."
+  },
+  {
+    q: "Balıklarda büyüme performansını doğrudan etkileyen en önemli faktörlerden biri aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Renk", "Ses", "Işık", "Su kalitesi"],
+    c: 3,
+    e: "Su kalitesi metabolizma, yem tüketimi ve genel sağlık üzerinde doğrudan etkilidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kimyasal kirliliğe örnektir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Ağır metal", "Bakteri", "Virüs", "Parazit"],
+    c: 0,
+    e: "Ağır metaller kimyasal kirleticidir."
+  },
+  {
+    q: "Balıklarda bağışıklık sistemini güçlendiren en önemli faktör aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Aşırı yemleme", "Düşük oksijen", "Dengeli beslenme", "Stres"],
+    c: 2,
+    e: "Dengeli beslenme bağışıklığı destekler."
+  },
+  {
+    q: "Balıkta parlak ve bombeli gözler aşağıdakilerden hangisini gösterir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Bozulma", "Yağ artışı", "Hastalık", "Tazelik"],
+    c: 3,
+    e: "Göz yapısı tazelik göstergesidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi işletme karını artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Stres", "Verimlilik", "Hastalık", "Maliyet artışı"],
+    c: 1,
+    e: "Verimlilik arttıkça karlılık artar."
+  },
+  {
+    q: "Amonyak (NH3) aşağıdakilerden hangisi için tehlikelidir?   (Su Kalitesi)",
+    o: ["Bitkiler", "Işık", "Balıklar", "Ses"],
+    c: 2,
+    e: "Amonyak balıklar için toksiktir."
+  },
+  {
+    q: "Yemleme sıklığını belirleyen en önemli faktör aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Balığın türü ve büyüklüğü", "Havuz rengi", "Gün sayısı", "Hava durumu"],
+    c: 0,
+    e: "Tür ve büyüklük metabolizma hızını belirler. Bu da yemleme programını doğrudan etkiler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri mevzuatında yer alan sınırlamalardan biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Tat yasağı", "Ses yasağı", "Renk yasağı", "Boy yasağı"],
+    c: 3,
+    e: "Boy yasağı en temel düzenlemelerden biridir."
+  },
+  {
+    q: "Balıklarda hastalıkların erken teşhisi aşağıdakilerden hangisini sağlar?   (Balık Hastalıkları)",
+    o: ["Maliyet artışı", "Kontrol kolaylığı", "Üretim kaybı", "Yayılmanın hızlanması"],
+    c: 1,
+    e: "Erken teşhis müdahaleyi kolaylaştırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi üretimi artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Hastalık", "Denetimsizlik", "Teknoloji kullanımı", "Stres"],
+    c: 2,
+    e: "Teknoloji verimliliği artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kalite kontrol parametresi değildir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Ses", "Tazelik", "Mikrobiyal yük", "Koku"],
+    c: 0,
+    e: "Ses kalite kriteri değildir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliğini artırır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Denetim", "Arıtma", "Temizlik", "Atık deşarjı"],
+    c: 3,
+    e: "Atıklar kirliliği artırır."
+  },
+  {
+    q: "Balık yemlerinin nemli ortamda saklanması aşağıdakilerden hangisine yol açar?   (Balık Besleme)",
+    o: ["Vitamin sentezi", "Enerji artışı", "Küflenme", "Protein artışı"],
+    c: 2,
+    e: "Nem, küf oluşumunu hızlandırır ve yem kalitesini ciddi şekilde düşürür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıkçılıkta sürdürülebilirliği sağlar?   (Su Ürünleri Mevzuatı)",
+    o: ["Üreme dönemine saygı", "Aşırı avcılık", "Denetimsizlik", "Küçük balık avlamak"],
+    c: 0,
+    e: "Üreme dönemine uyum stokların devamını sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini en iyi korur?   (Su Kalitesi)",
+    o: ["Ani değişim", "Stabil koşullar", "Aşırı yemleme", "Kir"],
+    c: 1,
+    e: "Stabilite en önemli faktördür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliğinin en önemli sonucudur?   (Su Kirliliği ve Kontrolü)",
+    o: ["Üretim artışı", "Oksijen artışı", "Ekosistem bozulması", "Su kalitesi artışı"],
+    c: 2,
+    e: "Kirlilik doğal dengeyi bozar."
+  },
+  {
+    q: "Bir işletmede üretim artmasına rağmen kar düşüyorsa bunun en olası nedeni nedir?   (Su Ürünleri Ekonomisi)",
+    o: ["Maliyet artışı", "Talep artışı", "Verimlilik artışı", "Teknoloji"],
+    c: 0,
+    e: "Maliyetler gelirden hızlı artıyorsa kar düşer."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda hastalık kontrolünde önemlidir?   (Balık Hastalıkları)",
+    o: ["Aşırı yemleme", "Su kalitesi", "Stres", "Denetimsizlik"],
+    c: 1,
+    e: "Su kalitesi hastalık kontrolünde ana faktördür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kalite kaybına neden olur?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Soğuk zincir", "Hijyen", "Paketleme", "Yüksek sıcaklık"],
+    c: 3,
+    e: "Yüksek sıcaklık bozulmayı hızlandırır."
+  },
+  {
+    q: "Aşırı yemleme sonucu aşağıdakilerden hangisi ortaya çıkar?   (Balık Besleme)",
+    o: ["Büyüme artışı", "Balık sayısında artış", "Oksijen artışı", "Su kalitesinin bozulması"],
+    c: 2,
+    e: "Tüketilmeyen yem suyu kirletir ve oksijen tüketimini artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi avcılıkta sınırlama türlerinden biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Renk yasağı", "Boy yasağı", "Ses yasağı", "Tat yasağı"],
+    c: 1,
+    e: "Boy yasağı yaygın bir düzenlemedir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini artırır?   (Su Kalitesi)",
+    o: ["Stres", "Atık", "Aşırı yemleme", "Arıtma"],
+    c: 3,
+    e: "Arıtma suyu iyileştirir."
+  },
+  {
+    q: "Balıklarda en sık görülen dış parazit aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Lernaea", "VHS", "Vitamin eksikliği", "Aeromonas"],
+    c: 0,
+    e: "Lernaea dış parazit olarak yaygındır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi HACCP kapsamında değerlendirilir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Reklam", "Pazarlama", "Risk analizi", "Fiyat"],
+    c: 2,
+    e: "HACCP risk odaklıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi çözünmüş oksijeni artırır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Fotosentez", "Organik kirlilik", "BOD artışı", "Atık su"],
+    c: 1,
+    e: "Bitkiler oksijen üretir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi ekonomik kayba yol açar?   (Su Ürünleri Ekonomisi)",
+    o: ["Aşırı yemleme", "Planlı üretim", "Eğitim", "Teknoloji kullanımı"],
+    c: 3,
+    e: "Gereksiz yem kullanımı maliyetleri artırır."
+  },
+  {
+    q: "Türkiye’de su ürünleri faaliyetlerini düzenleyen temel kanun aşağıdakilerden hangisidir?   (Su Ürünleri Mevzuatı)",
+    o: ["1380 sayılı Su Ürünleri Kanunu", "5996 sayılı Kanun", "5403 sayılı Kanun", "2872 sayılı Çevre Kanunu"],
+    c: 0,
+    e: "Su ürünleri avcılığı ve yetiştiriciliğini düzenleyen ana kanun 1380 sayılı kanundur."
+  },
+  {
+    q: "Balıklarda büyümenin yavaşlamasının en önemli nedenlerinden biri aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Yüksek oksijen", "Dengeli beslenme", "Yetersiz yemleme", "Uygun sıcaklık"],
+    c: 2,
+    e: "Yetersiz yemleme büyümeyi doğrudan sınırlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini artırır?   (Su Kalitesi)",
+    o: ["Atık", "Havalandırma", "Kir", "Aşırı yemleme"],
+    c: 1,
+    e: "Oksijen artışı kaliteyi artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda hastalık riskini azaltır?   (Balık Hastalıkları)",
+    o: ["Düzensiz yemleme", "Aşırı stoklama", "Stres", "Temiz su"],
+    c: 3,
+    e: "Temiz su sağlıklı ortam sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi maliyetleri düşürür?   (Su Ürünleri Ekonomisi)",
+    o: ["Planlı üretim", "Hastalık", "Stres", "Aşırı yemleme"],
+    c: 0,
+    e: "Planlama maliyet kontrolünü sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi eutrofikasyonu hızlandırır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Soğuk ortam", "Temiz su", "Oksijen", "Azot ve fosfor"],
+    c: 2,
+    e: "Besin maddeleri alg patlamasına yol açar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi hijyen zincirinin en zayıf halkasıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Paketleme", "İnsan faktörü", "Depolama", "Nakliye"],
+    c: 1,
+    e: "İnsan hijyeni en kritik noktadır."
+  },
+  {
+    q: "Mezgit balığında minimum avlanma boyu yaklaşık kaç cm’dir?   (Su Ürünleri Mevzuatı)",
+    o: ["25 cm", "10 cm", "18 cm", "13 cm"],
+    c: 3,
+    e: "Mezgit için alt sınır yaklaşık 13 cm’dir."
+  },
+  {
+    q: "Balıklarda büyümenin yavaşlamasının en önemli nedeni aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Yetersiz yem", "Yüksek oksijen", "Uygun sıcaklık", "Dengeli beslenme"],
+    c: 0,
+    e: "Yetersiz besleme büyümeyi doğrudan sınırlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri yönetiminde “sürdürülebilirlik” kavramını en iyi açıklar?   (Su Ürünleri Mevzuatı)",
+    o: ["Denetimsizlik", "Kısa vadeli kazanç", "Kaynakların korunarak kullanılması", "Sürekli avcılık"],
+    c: 2,
+    e: "Amaç kaynakların gelecek nesiller için korunmasıdır."
+  },
+  {
+    q: "Yem dönüşüm oranı (FCR) aşağıdakilerden hangisini ifade eder?   (Balık Besleme)",
+    o: ["Yemin enerji değeri", "1 kg canlı ağırlık artışı için tüketilen yem miktarı", "Yemin protein oranı", "Balığın günlük yem ihtiyacı"],
+    c: 1,
+    e: "FCR, yemden yararlanma düzeyini gösterir. Değer düştükçe üretim daha verimli olur."
+  },
+  {
+    q: "Balık etinin yumuşaması aşağıdakilerden hangisinin göstergesidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Protein artışı", "Yağ artışı", "Bozulma", "Tazelik"],
+    c: 3,
+    e: "Doku yumuşaması kalite kaybıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi işletmede karlılığı artırmanın en etkili yoludur?   (Su Ürünleri Ekonomisi)",
+    o: ["Maliyetleri kontrol etmek", "Fiyatı artırmak", "İşçi sayısını artırmak", "Rastgele üretim"],
+    c: 0,
+    e: "Maliyet kontrolü sürdürülebilir karlılık sağlar."
+  },
+  {
+    q: "Balıklarda solungaç hastalıkları en çok hangi sonucu doğurur?   (Balık Hastalıkları)",
+    o: ["Renk değişimi", "Solunum güçlüğü", "Protein artışı", "Tat değişimi"],
+    c: 1,
+    e: "Solungaçlar zarar gördüğünde oksijen alımı düşer."
+  },
+  {
+    q: "Biyobirikim (bioaccumulation) aşağıdakilerden hangisini ifade eder?   (Su Kirliliği ve Kontrolü)",
+    o: ["Oksijen artışı", "Su sıcaklığı", "Suyun temizlenmesi", "Kirleticilerin canlı dokusunda birikmesi"],
+    c: 3,
+    e: "Ağır metaller ve toksinler canlıda birikir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi suyun tamponlama kapasitesini artırır?   (Su Kalitesi)",
+    o: ["Alkalinite", "Oksijen", "Sıcaklık", "Tuz"],
+    c: 0,
+    e: "Alkalinite pH değişimini dengeler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balık yemlerinin su içinde batmasını sağlar?   (Balık Besleme)",
+    o: ["Ses", "Hava", "Yoğunluk", "Renk"],
+    c: 2,
+    e: "Yem yoğunluğu suya göre yüksekse batar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri kaynaklarını tehdit eder?   (Su Ürünleri Mevzuatı)",
+    o: ["Planlı avcılık", "Aşırı avcılık", "Yasaklar", "Denetim"],
+    c: 1,
+    e: "Aşırı avcılık stokları azaltır."
+  },
+  {
+    q: "Balıklarda dış parazitler genellikle hangi davranışı oluşturur?   (Balık Hastalıkları)",
+    o: ["Kaşınma", "Hızlı büyüme", "Sakin yüzme", "Normal davranış"],
+    c: 0,
+    e: "Parazitler kaşıntıya neden olur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliği sonucudur?   (Su Kirliliği ve Kontrolü)",
+    o: ["Oksijen artışı", "Ekosistem dengesi", "Balık ölümleri", "Su berraklığı"],
+    c: 2,
+    e: "Kirlilik canlı ölümlerine yol açar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kalite kaybının erken göstergesidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Tat artışı", "Sertleşme", "Renk artışı", "Koku değişimi"],
+    c: 3,
+    e: "Koku değişimi erken bozulma işaretidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi üretim verimliliğini artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Teknoloji", "Stres", "Düzensizlik", "Hastalık"],
+    c: 0,
+    e: "Teknoloji üretimi optimize eder."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini artırır?   (Su Kalitesi)",
+    o: ["Kir", "Stres", "Arıtma", "Atık"],
+    c: 2,
+    e: "Arıtma suyu temizler."
+  },
+  {
+    q: "Minimum avlanma boyu uygulamasının temel amacı aşağıdakilerden hangisidir?   (Su Ürünleri Mevzuatı)",
+    o: ["Ticareti artırmak", "Üreme şansı vermek", "İhracatı artırmak", "Balık fiyatlarını artırmak"],
+    c: 1,
+    e: "Balıkların en az bir kez üremesine fırsat vermek amaçlanır."
+  },
+  {
+    q: "Balıklarda büyümeyi artıran en önemli faktör aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Hastalık", "Stres", "Düşük oksijen", "Dengeli beslenme"],
+    c: 3,
+    e: "Dengeli beslenme büyümenin temelidir."
+  },
+  {
+    q: "Balıkta “soğuk zincirin kırılması” aşağıdakilerden hangisine doğrudan yol açar?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Mikroorganizma çoğalması", "Vitamin artışı", "Protein artışı", "Yağ oranı artışı"],
+    c: 0,
+    e: "Sıcaklık yükselince bakteriler hızla çoğalır."
+  },
+  {
+    q: "Balıklarda parazitler en çok hangi ortamda çoğalır?   (Balık Hastalıkları)",
+    o: ["Düşük yoğunluk", "Temiz su", "Kötü su koşulları", "Dengeli ortam"],
+    c: 2,
+    e: "Kötü koşullar parazit gelişimini artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi noktasal kirlilik kaynağıdır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Rüzgar", "Tarımsal akış", "Yağmur suyu", "Fabrika deşarjı"],
+    c: 3,
+    e: "Fabrika çıkışı belirli noktadan gelir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi ekonomik kayıp oluşturur?   (Su Ürünleri Ekonomisi)",
+    o: ["Teknoloji", "Aşırı yemleme", "Eğitim", "Planlı üretim"],
+    c: 1,
+    e: "Yem israfı doğrudan kayıptır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini düşürür?   (Su Kalitesi)",
+    o: ["Amonyak artışı", "Oksijen", "Fotosentez", "Temizlik"],
+    c: 0,
+    e: "Amonyak toksiktir."
+  },
+  {
+    q: "Mezgit balığında minimum av boyu uygulaması hangi sonucu hedefler?   (Su Ürünleri Mevzuatı)",
+    o: ["Üreme şansının artırılması", "Daha fazla satış", "İhracat", "Balık sayısını azaltmak"],
+    c: 3,
+    e: "Amaç balığın üreme olgunluğuna ulaşmasıdır."
+  },
+  {
+    q: "Yemleme sırasında en önemli kontrol aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Hava", "Tüketim miktarı", "Işık", "Renk"],
+    c: 1,
+    e: "Balığın yemi ne kadar tükettiği takip edilerek aşırı veya yetersiz yemleme önlenir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliği kontrolünde en etkili yöntemdir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Rastgele kullanım", "Denetimsizlik", "Arıtma", "Atık bırakmak"],
+    c: 2,
+    e: "Arıtma en temel çözümdür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kalite kontrol parametresidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Boy", "Işık", "Ses", "Tazelik"],
+    c: 3,
+    e: "Tazelik kalite göstergesidir."
+  },
+  {
+    q: "Balıklarda hastalıkların en hızlı yayılmasına neden olan faktör aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Temiz su", "Düşük yoğunluk", "Aşırı stoklama", "Dengeli beslenme"],
+    c: 1,
+    e: "Yüksek yoğunluk bulaşıcı hastalıkların hızla yayılmasına neden olur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi arzı artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Maliyet artışı", "Teknolojik gelişme", "Stres", "Hastalık"],
+    c: 0,
+    e: "Teknoloji üretimi artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri mevzuatına göre cezai yaptırım gerektirir?   (Su Ürünleri Mevzuatı)",
+    o: ["Denetime uymak", "Boy yasağına uymak", "Yasak av aracı kullanmak", "Ruhsat almak"],
+    c: 2,
+    e: "Yasaklı av araçları kullanmak doğrudan cezaya neden olur."
+  },
+  {
+    q: "Balıklarda yem tüketimini artıran en önemli faktör aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Düşük oksijen", "Uygun su sıcaklığı", "Stres", "Hastalık"],
+    c: 1,
+    e: "Uygun sıcaklık metabolizmayı dengeler ve yem alımını artırır."
+  },
+  {
+    q: "Su kalitesini belirleyen en önemli parametre aşağıdakilerden hangisidir?   (Su Kalitesi)",
+    o: ["Çözünmüş oksijen", "Işık", "Renk", "Ses"],
+    c: 0,
+    e: "Oksijen sucul yaşamın temelidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini düşürür?   (Su Kirliliği ve Kontrolü)",
+    o: ["Arıtma", "Temizlik", "Atık deşarjı", "Denetim"],
+    c: 2,
+    e: "Atıklar suyu kirletir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda hastalık belirtisi olarak kabul edilir?   (Balık Hastalıkları)",
+    o: ["Normal yüzme", "Aktif davranış", "Dengeli hareket", "İştah azalması"],
+    c: 3,
+    e: "İştah azalması erken hastalık belirtisidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi çapraz bulaşmaya örnektir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Temiz ekipman kullanımı", "Soğuk depolama", "Paketleme", "Çiğ ve pişmiş ürünün temas etmesi"],
+    c: 0,
+    e: "Çapraz bulaşma en büyük risklerden biridir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi karlılığı artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Verimli üretim", "Hastalık", "Maliyet artışı", "Stres"],
+    c: 2,
+    e: "Verimlilik maliyeti düşürür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi küçük boyda balık avlanmasının zararlarından biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Kalite artışı", "Üreme artışı", "Fiyat düşmesi", "Stokların azalması"],
+    c: 3,
+    e: "Üremeden avlanan balıklar stokların tükenmesine yol açar."
+  },
+  {
+    q: "Balıklarda büyümenin en hızlı olduğu dönem aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Açlık", "Gençlik", "Hastalık", "Yaşlılık"],
+    c: 1,
+    e: "Genç balıklar daha hızlı metabolizmaya sahiptir ve büyüme hızları yüksektir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi suyun sertliğini ifade eder?   (Su Kalitesi)",
+    o: ["Kalsiyum ve magnezyum miktarı", "pH", "Oksijen", "Tuz"],
+    c: 2,
+    e: "Sertlik Ca ve Mg iyonlarına bağlıdır."
+  },
+  {
+    q: "Balıklarda bağışıklığın düşmesine neden olan faktör aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Dengeli beslenme", "Temiz su", "Uygun sıcaklık", "Stres"],
+    c: 3,
+    e: "Stres bağışıklık sistemini zayıflatır."
+  },
+  {
+    q: "Bir işletmede yem maliyetinin toplam maliyet içindeki payının yüksek olması aşağıdakilerden hangisini daha kritik hale getirir?   (Su Ürünleri Ekonomisi)",
+    o: ["Su sıcaklığı", "Yemden yararlanma oranı (FCR)", "İşçi sayısı", "Işık süresi"],
+    c: 1,
+    e: "Yem en büyük giderdir; FCR iyileştikçe maliyet düşer."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliğinin fiziksel sonucudur?   (Su Kirliliği ve Kontrolü)",
+    o: ["Bulanıklık", "Zehirlenme", "Ölüm", "Hastalık"],
+    c: 0,
+    e: "Askıda katılar bulanıklık oluşturur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi taze balık göstergesidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Yumuşak doku", "Kötü koku", "Parlak göz", "Mat göz"],
+    c: 2,
+    e: "Taze balıkta gözler parlaktır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi yasaklı bir av yöntemidir?   (Su Ürünleri Mevzuatı)",
+    o: ["Kepçe", "Patlayıcı kullanımı", "Zıpkın", "Olta"],
+    c: 1,
+    e: "Patlayıcılar çevreye zarar verdiği için yasaktır."
+  },
+  {
+    q: "Balıklarda yem tüketimini en çok etkileyen çevresel faktör aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Su sıcaklığı", "Işık", "Renk", "Ses"],
+    c: 0,
+    e: "Sıcaklık metabolizma ve iştah üzerinde belirleyicidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini artırır?   (Su Kalitesi)",
+    o: ["Kir", "Atık", "Arıtma", "Stres"],
+    c: 2,
+    e: "Arıtma suyu temizler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi hastalık belirtisi değildir?   (Balık Hastalıkları)",
+    o: ["İştahta azalma", "Dengesiz yüzme", "Renk değişimi", "Hızlı büyüme"],
+    c: 3,
+    e: "Hızlı büyüme hastalık belirtisi değildir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi talep kavramını etkiler?   (Su Ürünleri Ekonomisi)",
+    o: ["Işık", "Gelir", "Su", "Ses"],
+    c: 1,
+    e: "Gelir seviyesi talebi belirler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliğinin insan sağlığı üzerindeki etkisidir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Hastalık riski", "Verim artışı", "Oksijen artışı", "Su kalitesi artışı"],
+    c: 0,
+    e: "Kirli su hastalıklara yol açar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi bozulmayı hızlandırır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Paketleme", "Soğutma", "Temizlik", "Sıcaklık artışı"],
+    c: 3,
+    e: "Sıcaklık artışı mikroorganizmayı artırır."
+  },
+  {
+    q: "Balık yemlerinde kullanılan balık yağı ne sağlar?   (Balık Besleme)",
+    o: ["Vitamin", "Enerji", "Su", "Mineral"],
+    c: 1,
+    e: "Balık yağı yüksek enerji sağlar ve büyümeyi destekler."
+  },
+  {
+    q: "Kalkan balığı için minimum avlanma boyu aşağıdakilerden hangisine en yakındır?   (Su Ürünleri Mevzuatı)",
+    o: ["30 cm", "25 cm", "45 cm", "60 cm"],
+    c: 2,
+    e: "Kalkan balığı için minimum av boyu yaklaşık 45 cm’dir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri mevzuatında yer alan koruma önlemlerinden biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Av yasağı", "Denetimsizlik", "Sürekli av", "Rastgele av"],
+    c: 0,
+    e: "Av yasakları stokların korunmasını sağlar."
+  },
+  {
+    q: "Balık yemlerinin granül (pelet) şeklinde olması ne sağlar?   (Balık Besleme)",
+    o: ["Tüketimi zorlaştırır", "Kullanım kolaylığı sağlar", "Dağılmayı artırır", "Enerjiyi azaltır"],
+    c: 3,
+    e: "Pelet yemler kolay tüketilir ve israfı azaltır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini artırır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Atık", "Arıtma", "Kir", "Düzensizlik"],
+    c: 1,
+    e: "Arıtma suyu temizler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda hastalık yayılımını yavaşlatır?   (Balık Hastalıkları)",
+    o: ["Karantina", "Düzensiz yemleme", "Stres", "Aşırı stoklama"],
+    c: 0,
+    e: "Karantina bulaşmayı sınırlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi üretim maliyetini artırmadan verimi artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Stres", "Düzensizlik", "Teknoloji", "Hastalık"],
+    c: 2,
+    e: "Teknoloji verim artışı sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi hijyen kuralıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Kirli ekipman kullanmak", "Açık ürün saklamak", "Eldiven kullanmamak", "El yıkamak"],
+    c: 3,
+    e: "El hijyeni temel kuraldır."
+  },
+  {
+    q: "Balıkların yüzeye çıkması aşağıdakilerden hangisinin göstergesidir?   (Su Kalitesi)",
+    o: ["Temiz su", "Yüksek oksijen", "Düşük oksijen", "Uygun pH"],
+    c: 1,
+    e: "Balıklar oksijen için yüzeye çıkar."
+  },
+  {
+    q: "Balık yemlerinde karbonhidratın temel görevi aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Su artırmak", "Protein sağlamak", "Enerji sağlamak", "Vitamin üretmek"],
+    c: 2,
+    e: "Karbonhidratlar balık için ek enerji kaynağıdır ve protein tasarrufu sağlar."
+  },
+  {
+    q: "Su ürünleri avcılığında getirilen yasakların temel amacı aşağıdakilerden hangisidir?   (Su Ürünleri Mevzuatı)",
+    o: ["Stokları korumak", "Ticareti artırmak", "Balık fiyatlarını düşürmek", "İhracatı artırmak"],
+    c: 0,
+    e: "Yasaklar sürdürülebilirlik ve stokların korunması için uygulanır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi sucul canlılar için toksik etki oluşturur?   (Su Kirliliği ve Kontrolü)",
+    o: ["Işık", "Karbondioksit", "Oksijen", "Ağır metaller"],
+    c: 3,
+    e: "Ağır metaller zehirleyicidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi raf ömrünü en çok etkiler?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Renk", "Sıcaklık", "Ses", "Işık"],
+    c: 1,
+    e: "Sıcaklık raf ömrünü belirler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi üretimi artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Hastalık", "Denetimsizlik", "Teknoloji", "Stres"],
+    c: 2,
+    e: "Teknoloji verimliliği artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi hastalık belirtisidir?   (Balık Hastalıkları)",
+    o: ["Normal davranış", "Aktif yüzme", "Hızlı büyüme", "İştahsızlık"],
+    c: 3,
+    e: "İştahsızlık hastalık belirtisidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini belirler?   (Su Kalitesi)",
+    o: ["Ses", "Oksijen", "Işık", "Renk"],
+    c: 1,
+    e: "Oksijen en kritik faktördür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi yasaklı av yöntemlerinden biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Dinamit kullanımı", "Olta", "Zıpkın", "Kepçe"],
+    c: 0,
+    e: "Patlayıcı kullanımı kesinlikle yasaktır."
+  },
+  {
+    q: "Balık yemlerinde kullanılan balık unu temel olarak ne sağlar?   (Balık Besleme)",
+    o: ["Mineral", "Su", "Protein", "Enerji"],
+    c: 2,
+    e: "Balık unu yüksek kaliteli protein kaynağıdır ve amino asit açısından zengindir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda mantar enfeksiyonunun tipik belirtisidir?   (Balık Hastalıkları)",
+    o: ["Şişkinlik", "Siyah lekeler", "Hızlı büyüme", "Beyaz pamuksu yapı"],
+    c: 3,
+    e: "Mantar hastalıkları genellikle pamuksu beyaz yapı oluşturur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi sucul ekosistem dengesini bozar?   (Su Kirliliği ve Kontrolü)",
+    o: ["Kirlilik", "Oksijen", "Temizlik", "Fotosentez"],
+    c: 0,
+    e: "Kirlilik ekosistemi bozar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi maliyetleri düşürür?   (Su Ürünleri Ekonomisi)",
+    o: ["Stres", "Aşırı yemleme", "Verimli üretim", "Hastalık"],
+    c: 2,
+    e: "Verimli üretim kaynak kullanımını optimize eder."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kaliteyi artırır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Sıcaklık artışı", "Temizlik", "Düzensizlik", "Kir"],
+    c: 1,
+    e: "Temizlik kaliteyi korur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklar için en uygun ortamdır?   (Su Kalitesi)",
+    o: ["Düşük oksijen", "Ani değişim", "Yüksek amonyak", "Stabil su koşulları"],
+    c: 3,
+    e: "Stabil ortam sağlıklı üretim sağlar."
+  },
+  {
+    q: "Balık yemlerinde sindirilebilirlik neden önemlidir?   (Balık Besleme)",
+    o: ["Besin kullanımını artırmak için", "Enerji kaybı için", "Su artırmak için", "Renk için"],
+    c: 0,
+    e: "Sindirilebilir yemler daha iyi değerlendirilir ve büyümeyi artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi mevzuata uygun bir davranıştır?   (Su Ürünleri Mevzuatı)",
+    o: ["Yasak dönemde av", "Ruhsatlı avcılık", "Kaçak avcılık", "Denetimden kaçmak"],
+    c: 1,
+    e: "Ruhsatlı ve kurallara uygun avcılık yasaldır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi işletme gelirini artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Maliyet artışı", "Hastalık", "Stres", "Üretim artışı"],
+    c: 3,
+    e: "Üretim arttıkça satış artar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünlerinde güvenli üretimin temelidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Denetimsizlik", "Stres", "Hijyen", "Rastgele üretim"],
+    c: 2,
+    e: "Hijyen olmadan güvenli üretim olmaz."
+  },
+  {
+    q: "Balıklarda bakteriyel enfeksiyonlar en çok hangi durumda ortaya çıkar?   (Balık Hastalıkları)",
+    o: ["Stresli ortam", "Temiz su", "Sağlıklı ortam", "Dengeli ortam"],
+    c: 0,
+    e: "Stres patojenlerin etkisini artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliği sonucu oluşur?   (Su Kirliliği ve Kontrolü)",
+    o: ["Su berraklığı", "Balık ölümleri", "Ekosistem dengesi", "Oksijen artışı"],
+    c: 1,
+    e: "Oksijen azalınca balık ölümleri olur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi sürdürülebilir balıkçılığın temel ilkelerinden biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Aşırı avcılık", "Sürekli av", "Küçük balıkların avlanması", "Stokların korunması"],
+    c: 3,
+    e: "Stokların korunması sürdürülebilirliğin temelidir."
+  },
+  {
+    q: "Balıklarda yemleme sırasında gözlemlenen en önemli kriter aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Yem tüketim davranışı", "Su seviyesi", "Hava durumu", "Renk değişimi"],
+    c: 0,
+    e: "Balığın yem alma davranışı yemleme miktarını ayarlamak için temel göstergedir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini artırır?   (Su Kalitesi)",
+    o: ["Stres", "Kir", "Arıtma", "Atık"],
+    c: 2,
+    e: "Arıtma suyu temizler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi üretim maliyetini artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Verimli yem kullanımı", "Aşırı yemleme", "Teknolojik gelişme", "Planlı üretim"],
+    c: 1,
+    e: "Aşırı yemleme hem israf hem maliyet artışı oluşturur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi bakteriyel balık hastalığıdır?   (Balık Hastalıkları)",
+    o: ["Aeromonas enfeksiyonu", "Saprolegnia", "İhtiyofthirius", "Lernaea"],
+    c: 0,
+    e: "Aeromonas bakteriyel bir patojendir ve yaygın hastalıklara neden olur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi hijyenin temel unsurudur?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Renk", "Işık", "Temizlik", "Ses"],
+    c: 2,
+    e: "Hijyenin temeli temizliktir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini artırır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Atık", "Kir", "Düzensizlik", "Arıtma"],
+    c: 3,
+    e: "Arıtma suyu temizler."
+  },
+  {
+    q: "Balık yemlerinde yoğun enerji kaynağı olarak en çok hangi besin grubu kullanılır?   (Balık Besleme)",
+    o: ["Yağ", "Vitamin", "Su", "Protein"],
+    c: 0,
+    e: "Yağlar yüksek enerji içerir. Bu sayede balığın enerji ihtiyacı daha az yemle karşılanabilir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri mevzuatında “kaçak avcılık” kapsamına girer?   (Su Ürünleri Mevzuatı)",
+    o: ["Ruhsatlı avcılık", "Boy yasağına uyum", "Yasak dönemde avcılık", "Denetime katılma"],
+    c: 2,
+    e: "Yasak dönemde avcılık mevzuata aykırıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklar için stres oluşturur?   (Su Kalitesi)",
+    o: ["Temiz su", "Stabil ortam", "Uygun oksijen", "Ani pH değişimi"],
+    c: 3,
+    e: "Ani değişimler stres yaratır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi yayılı kirliliğe örnektir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Kanalizasyon", "Tarımsal akış", "Arıtma tesisi", "Fabrika"],
+    c: 1,
+    e: "Tarımsal kirlilik geniş alana yayılır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi bozulmayı yavaşlatır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Açık depolama", "Kirli ortam", "Sıcak ortam", "Soğuk depolama"],
+    c: 2,
+    e: "Soğuk ortam mikroorganizmayı yavaşlatır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi karı artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Verimlilik", "Stres", "Maliyet artışı", "Hastalık"],
+    c: 0,
+    e: "Verimlilik maliyetleri düşürür."
+  },
+  {
+    q: "Balıklarda hastalık riskini azaltmak için aşağıdakilerden hangisi yapılmalıdır?   (Balık Hastalıkları)",
+    o: ["Stres artırmak", "Su kalitesini korumak", "Düzensiz yemleme", "Aşırı stoklama"],
+    c: 1,
+    e: "Su kalitesi hastalık kontrolünde en kritik faktördür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi av yasağı döneminin temel nedenidir?   (Su Ürünleri Mevzuatı)",
+    o: ["Ticaret", "İhracat", "Vergi", "Üreme"],
+    c: 3,
+    e: "Üreme döneminde balıklar korunur."
+  },
+  {
+    q: "Balık yemlerinde kullanılan bağlayıcı maddeler aşağıdakilerden hangisini sağlar?   (Balık Besleme)",
+    o: ["Enerji artışı", "Protein artırma", "Dağılmayı önleme", "Vitamin üretimi"],
+    c: 0,
+    e: "Bağlayıcılar yemin su içinde formunu korumasını sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi çözünmüş oksijeni azaltır?   (Su Kalitesi)",
+    o: ["Fotosentez", "Organik madde", "Temiz su", "Soğuk ortam"],
+    c: 1,
+    e: "Organik madde oksijen tüketir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda mantar hastalığıdır?   (Balık Hastalıkları)",
+    o: ["Lernaea", "Aeromonas", "VHS", "Saprolegnia"],
+    c: 3,
+    e: "Saprolegnia mantar hastalığıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kaliteyi belirler?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Işık", "Renk", "Tazelik", "Ses"],
+    c: 2,
+    e: "Tazelik kaliteyi belirler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliğinin ekonomik etkisidir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Üretim artışı", "Balık stoklarının azalması", "Oksijen artışı", "Su kalitesi artışı"],
+    c: 1,
+    e: "Kirlilik balıkçılığı olumsuz etkiler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi talebi artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Fiyat artışı", "Maliyet artışı", "Üretim artışı", "Gelir artışı"],
+    c: 3,
+    e: "Gelir arttıkça tüketim talebi artar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünleri kaynaklarını korur?   (Su Ürünleri Mevzuatı)",
+    o: ["Aşırı av", "Rastgele av", "Planlı av", "Denetimsizlik"],
+    c: 2,
+    e: "Planlı avcılık sürdürülebilirliği sağlar."
+  },
+  {
+    q: "Yüksek proteinli yemler daha çok hangi balık türleri için uygundur?   (Balık Besleme)",
+    o: ["Etçil", "Otçul", "Planktonla beslenen", "Hepsi"],
+    c: 0,
+    e: "Etçil balıkların protein ihtiyacı daha yüksektir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balık stoklarının korunmasına katkı sağlar?   (Su Ürünleri Mevzuatı)",
+    o: ["Sürekli avcılık", "Rastgele avcılık", "Aşırı avcılık", "Denetimli avcılık"],
+    c: 3,
+    e: "Denetimli avcılık sürdürülebilirliği sağlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi yem tüketimini artırır?   (Balık Besleme)",
+    o: ["Stres", "Uygun ortam koşulları", "Hastalık", "Düşük oksijen"],
+    c: 1,
+    e: "Uygun çevre koşulları iştahı artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi güvenli gıda üretimi için gereklidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Hijyen", "Yüksek sıcaklık", "Kir", "Düzensizlik"],
+    c: 0,
+    e: "Hijyen olmazsa gıda güvenliği sağlanamaz."
+  },
+  {
+    q: "Aşağıdakilerden hangisi ağır metal kirliliğine örnektir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Oksijen", "Azot", "Kurşun", "Fosfor"],
+    c: 2,
+    e: "Kurşun ağır metaldir."
+  },
+  {
+    q: "Balıklarda iştahsızlık aşağıdakilerden hangisinin göstergesidir?   (Balık Hastalıkları)",
+    o: ["Sağlık", "Büyüme", "Enerji artışı", "Hastalık"],
+    c: 3,
+    e: "İştahsızlık en erken hastalık belirtisidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi sürdürülebilir ekonomik üretimin temelidir?   (Su Ürünleri Ekonomisi)",
+    o: ["Kaynak yönetimi", "Aşırı üretim", "Rastgele üretim", "Denetimsizlik"],
+    c: 0,
+    e: "Kaynakların korunarak kullanılması gerekir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini artırır?   (Su Kalitesi)",
+    o: ["Atık", "Aşırı yemleme", "Arıtma", "Stres"],
+    c: 2,
+    e: "Arıtma ile su temizlenir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıkçılıkta kontrol mekanizmasıdır?   (Su Ürünleri Mevzuatı)",
+    o: ["Pazarlama", "Denetim", "Depolama", "Satış"],
+    c: 1,
+    e: "Denetim, kuralların uygulanmasını sağlar."
+  },
+  {
+    q: "Balık yemlerinin su içinde çözünmesi aşağıdakilerden hangisine yol açar?   (Balık Besleme)",
+    o: ["Besin kaybı", "Oksijen artışı", "Büyüme artışı", "Su temizliği"],
+    c: 0,
+    e: "Çözünen yem tüketilemeden kaybolur."
+  },
+  {
+    q: "Balıklarda hastalık riskini azaltmanın en etkili yolu aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Tedavi", "Beklemek", "Önlem almak", "Rastgele müdahale"],
+    c: 2,
+    e: "Önleyici yaklaşım en etkili yöntemdir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi üretim maliyetini düşürür?   (Su Ürünleri Ekonomisi)",
+    o: ["Aşırı yemleme", "Stres", "Hastalık", "Planlı üretim"],
+    c: 3,
+    e: "Planlama kaynak kullanımını optimize eder."
+  },
+  {
+    q: "Balıkta mukus tabakasının artması aşağıdakilerden hangisini gösterir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Tazelik", "Protein artışı", "Bozulma", "Yağ artışı"],
+    c: 1,
+    e: "Mukus artışı mikrobiyal faaliyeti gösterir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi eutrofikasyonun ileri aşamasıdır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Oksijen tükenmesi", "Tuz azalması", "Sıcaklık düşmesi", "Su berraklığı"],
+    c: 0,
+    e: "Alg patlaması sonrası oksijen tükenir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini düşürür?   (Su Kalitesi)",
+    o: ["Fotosentez", "Oksijen", "Temizlik", "Amonyak artışı"],
+    c: 3,
+    e: "Amonyak toksik etkidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıkçılıkta yasakların uygulanma nedenlerinden biridir?   (Su Ürünleri Mevzuatı)",
+    o: ["Ticaret azaltmak", "Üreme dönemini korumak", "İthalatı artırmak", "Fiyat artırmak"],
+    c: 1,
+    e: "Üreme döneminde koruma sağlanır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balık yemlerinde esansiyel amino asitlerden biridir?   (Balık Besleme)",
+    o: ["Prolin", "Serin", "Lizin", "Glisin"],
+    c: 2,
+    e: "Lizin balıklar için dışarıdan alınması gereken temel amino asitlerden biridir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi işletme verimliliğini artırır?   (Su Ürünleri Ekonomisi)",
+    o: ["Eğitim", "Stres", "Denetimsizlik", "Hastalık"],
+    c: 0,
+    e: "Eğitim üretim kalitesini artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünlerinde güvenli gıda üretimi sağlar?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Rastgele işlem", "Denetimsizlik", "Aşırı üretim", "Hijyen uygulamaları"],
+    c: 3,
+    e: "Hijyen gıda güvenliğinin temelidir."
+  },
+  {
+    q: "Su kirliliğinin en temel tanımı aşağıdakilerden hangisidir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Suyun akış hızının değişmesi", "Suyun doğal yapısının bozulması", "Suyun sıcaklığının artması", "Suyun renginin değişmesi"],
+    c: 1,
+    e: "Kirlilik, suyun fiziksel-kimyasal-biyolojik yapısının bozulmasıdır."
+  },
+  {
+    q: "İhtiyofthirius (beyaz benek) hastalığı aşağıdaki etkenlerden hangisiyle oluşur?   (Balık Hastalıkları)",
+    o: ["Mantar", "Virüs", "Parazit", "Bakteri"],
+    c: 2,
+    e: "Beyaz benek hastalığı protozoon parazit kaynaklıdır."
+  },
+  {
+    q: "Nitrat (NO3) aşağıdakilerden hangisidir?   (Su Kalitesi)",
+    o: ["Daha az zararlı", "Orta toksik", "Çok toksik", "Zararsız"],
+    c: 0,
+    e: "Nitrat, diğerlerine göre daha az zararlıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi yem kalitesini düşüren bir faktördür?   (Balık Besleme)",
+    o: ["Dengeli içerik", "Uygun depolama", "Taze yem", "Küflenme"],
+    c: 3,
+    e: "Küflenmiş yem hem besin değerini düşürür hem de hastalıklara neden olabilir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıkçılıkta yasaklı dönemdir?   (Su Ürünleri Mevzuatı)",
+    o: ["Ruhsat", "Kota", "Av yasağı", "Denetim"],
+    c: 2,
+    e: "Av yasağı üreme döneminde uygulanır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi işletme başarısının temel göstergesidir?   (Su Ürünleri Ekonomisi)",
+    o: ["Karlılık", "Denetimsizlik", "Üretim rastgeleliği", "Stres"],
+    c: 0,
+    e: "İşletmenin başarısı karlılıkla ölçülür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi biyolojik kontaminasyona örnektir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Cam", "Bakteri", "Plastik", "Metal"],
+    c: 1,
+    e: "Bakteriler biyolojik kirleticidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliği göstergesidir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Düşük bakteri", "Temiz su", "Yüksek BOD", "Yüksek oksijen"],
+    c: 2,
+    e: "BOD yüksekse kirlilik vardır."
+  },
+  {
+    q: "Balıklarda sağlıklı üretim için aşağıdakilerden hangisi gereklidir?   (Balık Hastalıkları)",
+    o: ["Stres", "Uygun çevre koşulları", "Aşırı stoklama", "Düzensiz yemleme"],
+    c: 0,
+    e: "Sağlıklı ortam hastalık riskini azaltır."
+  },
+  {
+    q: "Balık yemlerinde mineral eksikliği aşağıdakilerden hangisine yol açar?   (Balık Besleme)",
+    o: ["Su artışı", "Renk artışı", "Protein artışı", "Kemik deformasyonu"],
+    c: 3,
+    e: "Mineraller özellikle kemik ve iskelet gelişimi için gereklidir."
+  },
+  {
+    q: "Aşağıdaki türlerden hangisi küçük boylu olduğu için minimum av boyu daha düşüktür?   (Su Ürünleri Mevzuatı)",
+    o: ["Orkinos", "Hamsi", "Kalkan", "Levrek"],
+    c: 1,
+    e: "Hamsi küçük boylu bir türdür ve minimum av boyu diğerlerine göre düşüktür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini en hızlı bozar?   (Su Kalitesi)",
+    o: ["Fotosentez", "Arıtma", "Aşırı yemleme", "Temizlik"],
+    c: 2,
+    e: "Fazla yem → hızlı kirlilik."
+  },
+  {
+    q: "Aşağıdakilerden hangisi “ölçek ekonomisi” kavramını en iyi açıklar?   (Su Ürünleri Ekonomisi)",
+    o: ["Üretim azaldıkça maliyetin düşmesi", "Sabit maliyetlerin artması", "Üretim arttıkça birim maliyetin düşmesi", "Küçük üretimde maliyet düşmesi"],
+    c: 3,
+    e: "Büyük üretimde birim maliyet düşer."
+  },
+  {
+    q: "Balıklarda hastalıkların yayılmasını hızlandıran en önemli faktör aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Aşırı stoklama", "Düşük stok yoğunluğu", "Temiz su", "Dengeli beslenme"],
+    c: 1,
+    e: "Yoğun stoklama hastalıkların hızla yayılmasına neden olur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi fiziksel kontaminasyon örneğidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Cam kırığı", "Bakteri", "Küf", "Virüs"],
+    c: 0,
+    e: "Cam, fiziksel kirleticidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kimyasal kirleticidir?   (Su Kirliliği ve Kontrolü)",
+    o: ["Bakteri", "Virüs", "Parazit", "Ağır metal"],
+    c: 3,
+    e: "Ağır metaller kimyasal kirliliktir."
+  },
+  {
+    q: "Balıklarda yemleme sırasında en doğru yöntem aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Rastgele yemleme", "Kontrollü yemleme", "Düzensiz yemleme", "Aşırı yemleme"],
+    c: 1,
+    e: "Kontrollü yemleme hem verimi artırır hem israfı azaltır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklar için toksiktir?   (Su Kalitesi)",
+    o: ["Oksijen", "Su", "Amonyak", "Işık"],
+    c: 2,
+    e: "Amonyak zehirlidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kirliliği kontrolünde en önemli adımdır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Denetimsizlik", "Atık bırakmak", "Rastgele kullanım", "Kaynağında önleme"],
+    c: 3,
+    e: "En etkili yöntem kaynağında kontrol etmektir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi gıda güvenliği riskini en çok artırır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Soğutma", "Çapraz bulaşma", "Paketleme", "Temizlik"],
+    c: 1,
+    e: "Çapraz bulaşma ciddi risk oluşturur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda hastalık belirtisidir?   (Balık Hastalıkları)",
+    o: ["İştah azalması", "Hızlı büyüme", "Dengeli hareket", "Normal yüzme"],
+    c: 0,
+    e: "İştah azalması önemli bir belirtidir."
+  },
+  {
+    q: "Su ürünleri yetiştiriciliğinde en büyük maliyet kalemi genellikle aşağıdakilerden hangisidir?   (Su Ürünleri Ekonomisi)",
+    o: ["Elektrik", "İşçilik", "Yem gideri", "Su"],
+    c: 2,
+    e: "Yem giderleri toplam maliyetin en büyük kısmını oluşturur."
+  },
+  {
+    q: "Balıklarda aşırı yemleme aşağıdakilerden hangisine neden olur?   (Balık Besleme)",
+    o: ["Büyümenin artması", "Oksijen artışı", "Su kalitesinin bozulması", "Vitamin artışı"],
+    c: 1,
+    e: "Tüketilmeyen yem suyu kirletir ve oksijen tüketimini artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini doğrudan düşürür?   (Su Kalitesi)",
+    o: ["Temizlik", "Fotosentez", "Havalandırma", "Amonyak artışı"],
+    c: 3,
+    e: "Amonyak toksik etkidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi talebi azaltır?   (Su Ürünleri Ekonomisi)",
+    o: ["Üretim artışı", "Teknoloji", "Fiyat artışı", "Gelir artışı"],
+    c: 2,
+    e: "Fiyat arttıkça talep düşer."
+  },
+  {
+    q: "Aşağıdakilerden hangisi kaliteyi artırır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Temizlik", "Yüksek sıcaklık", "Stres", "Kir"],
+    c: 0,
+    e: "Temizlik kaliteyi korur."
+  },
+  {
+    q: "Balıklarda dış parazitlerin en sık bulunduğu bölge aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Deri ve solungaç", "İç organlar", "Kemik", "Kas"],
+    c: 1,
+    e: "Parazitler genellikle dış yüzeyde yerleşir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi çözünmüş oksijenin azalmasına neden olur?   (Su Kirliliği ve Kontrolü)",
+    o: ["Fotosentez", "Soğuk ortam", "Temiz su", "Organik madde"],
+    c: 3,
+    e: "Organik madde oksijen tüketir."
+  },
+  {
+    q: "Balıklarda yemleme sonrası gözlenen en önemli kontrol aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Artan yem miktarı", "Su rengi", "Işık", "Hava"],
+    c: 0,
+    e: "Artan yem varsa aşırı yemleme yapılmıştır ve düzeltilmelidir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesinin korunmasında en etkili yöntemdir?   (Su Kalitesi)",
+    o: ["Aşırı yemleme", "Denetimsizlik", "Düzenli su değişimi", "Stres"],
+    c: 2,
+    e: "Kontrollü su değişimi kaliteyi korur."
+  },
+  {
+    q: "Balıkta amonyak kokusu aşağıdakilerden hangisinin göstergesidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Vitamin artışı", "Tazelik", "Protein artışı", "Bozulma"],
+    c: 3,
+    e: "Amonyak kokusu ileri bozulma belirtisidir."
+  },
+  {
+    q: "Balıklarda aşırı yağ kullanımı aşağıdakilerden hangisine neden olabilir?   (Balık Besleme)",
+    o: ["Sağlık artışı", "Yağlanma ve kalite düşüşü", "Su artışı", "Protein artışı"],
+    c: 1,
+    e: "Fazla yağ depolanır ve et kalitesini düşürebilir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi üretimi azaltır?   (Su Ürünleri Ekonomisi)",
+    o: ["Hastalık", "Teknoloji", "Planlama", "Eğitim"],
+    c: 0,
+    e: "Hastalık üretim kaybına neden olur."
+  },
+  {
+    q: "Balıklarda hastalıkların ortaya çıkmasını kolaylaştıran durum aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Temiz su", "Dengeli beslenme", "Stres", "Uygun sıcaklık"],
+    c: 2,
+    e: "Stres hastalıklara zemin hazırlar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini düşürür?   (Su Kirliliği ve Kontrolü)",
+    o: ["Fotosentez", "Oksijen", "Temiz su", "Atık su"],
+    c: 3,
+    e: "Atık su kirlilik oluşturur."
+  },
+  {
+    q: "Balıkların büyüme hızını etkileyen faktörlerden biri aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Su kalitesi", "Boyut", "Renk", "Ses"],
+    c: 0,
+    e: "Su kalitesi doğrudan metabolizma ve büyümeyi etkiler."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su ürünlerinde kalite ve güvenliğin temelini oluşturur?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Pazarlama", "Fiyat", "Hijyen ve soğuk zincir", "Reklam"],
+    c: 2,
+    e: "Hijyen + sıcaklık kontrolü = güvenli gıda."
+  },
+  {
+    q: "Balıklarda hastalıkların yayılmasını artıran faktör aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    o: ["Temiz su", "Düşük yoğunluk", "Aşırı stoklama", "Dengeli beslenme"],
+    c: 1,
+    e: "Yoğunluk arttıkça bulaşma artar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi çözünmüş oksijeni artırır?   (Su Kirliliği ve Kontrolü)",
+    o: ["Atık su", "Fotosentez", "BOD artışı", "Organik kirlilik"],
+    c: 3,
+    e: "Bitkiler oksijen üretir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi işletmede risk faktörüdür?   (Su Ürünleri Ekonomisi)",
+    o: ["Hastalık", "Eğitim", "Planlama", "Teknoloji"],
+    c: 0,
+    e: "Hastalık üretim kaybına yol açar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini en çok etkileyen faktördür?   (Su Kalitesi)",
+    o: ["Işık", "Renk", "Oksijen", "Ses"],
+    c: 2,
+    e: "Oksijen en kritik parametredir."
+  },
+  {
+    q: "Balık yemlerinde suyun temel görevi aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Vitamin üretmek", "Taşıyıcı ortam oluşturmak", "Protein sağlamak", "Enerji sağlamak"],
+    c: 1,
+    e: "Su, metabolik süreçlerin gerçekleştiği ortamdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi eutrofikasyonun sonucudur?   (Su Kirliliği ve Kontrolü)",
+    o: ["Su berraklığı", "Balık ölümleri", "Tuz azalması", "Oksijen artışı"],
+    c: 3,
+    e: "Alg patlaması sonrası oksijen düşer."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda viral hastalıkların kontrolünde etkili değildir?   (Balık Hastalıkları)",
+    o: ["Karantina", "Hijyen", "Antibiyotik", "Aşılama"],
+    c: 2,
+    e: "Antibiyotikler virüslere karşı etkili değildir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi hijyen hatasıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    o: ["Çapraz bulaşma", "El yıkamak", "Temiz ekipman", "Soğuk depolama"],
+    c: 0,
+    e: "Çapraz bulaşma ciddi hijyen hatasıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi piyasa dengesini belirler?   (Su Ürünleri Ekonomisi)",
+    o: ["Işık", "Arz ve talep", "Su sıcaklığı", "Oksijen"],
+    c: 1,
+    e: "Fiyat ve miktar arz-talep ile belirlenir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesi parametresidir?   (Su Kalitesi)",
+    o: ["Işık", "Renk", "Ses", "Oksijen"],
+    c: 3,
+    e: "Oksijen temel parametredir."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklarda büyümeyi artırır?   (Balık Besleme)",
+    o: ["Dengeli beslenme", "Düşük oksijen", "Stres", "Hastalık"],
+    c: 0,
+    e: "Dengeli beslenme büyümenin temel şartıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini düşürür?   (Su Kalitesi)",
+    o: ["Fotosentez", "Temiz su", "Aşırı yemleme", "Oksijen"],
+    c: 1,
+    e: "Fazla yem → atık → su bozulur."
+  },
+  {
+    q: "Balıklarda metabolizma hızını doğrudan etkileyen faktör aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Işık", "Ses", "Renk", "Su sıcaklığı"],
+    c: 3,
+    e: "Sıcaklık metabolizma hızını belirleyen en önemli çevresel faktördür."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balık sağlığını olumsuz etkiler?   (Su Kalitesi)",
+    o: ["Temiz su", "Uygun pH", "Ani sıcaklık değişimi", "Stabil ortam"],
+    c: 2,
+    e: "Ani değişimler stres yaratır."
+  },
+  {
+    q: "Balık yemlerinin suda batma veya yüzme özelliği neye bağlıdır?   (Balık Besleme)",
+    o: ["Yoğunluk", "Renk", "Ses", "Işık"],
+    c: 0,
+    e: "Yem yoğunluğu suya göre fazla ise batar, az ise yüzer."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesinin temel göstergesidir?   (Su Kalitesi)",
+    o: ["Işık", "Oksijen", "Renk", "Ses"],
+    c: 1,
+    e: "Oksijen yaşamın temelidir."
+  },
+  {
+    q: "Balıklarda optimum üretim için aşağıdakilerden hangisi gereklidir?   (Balık Besleme)",
+    o: ["Stres", "Açlık", "Dengeli beslenme ve uygun ortam", "Düşük oksijen"],
+    c: 2,
+    e: "Hem beslenme hem çevresel koşullar birlikte optimum olmalıdır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini düşürür?   (Su Kalitesi)",
+    o: ["Aşırı yemleme", "Oksijen", "Temizlik", "Fotosentez"],
+    c: 0,
+    e: "Fazla yem → kirlilik → kalite düşer."
+  },
+  {
+    q: "Balıklarda yemleme sonrası kontrol edilmesi gereken en önemli durum aşağıdakilerden hangisidir?   (Balık Besleme)",
+    o: ["Renk", "Artan yem", "Hava", "Işık"],
+    c: 1,
+    e: "Artan yem varsa fazla yemleme yapılmıştır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini en hızlı bozar?   (Su Kalitesi)",
+    o: ["Havalandırma", "Temizlik", "Arıtma", "Aşırı yemleme"],
+    c: 3,
+    e: "Fazla yem → hızlı kirlilik."
+  },
+  {
+    q: "Aşağıdakilerden hangisi yem maliyetini artırır?   (Balık Besleme)",
+    o: ["Dengeli rasyon", "Kontrollü yemleme", "Aşırı protein kullanımı", "Uygun depolama"],
+    c: 2,
+    e: "Gereğinden fazla protein kullanımı maliyeti artırır."
+  },
+  {
+    q: "Balık yemlerinde kullanılan balık unu aşağıdakilerden hangisini sağlar?   (Balık Besleme)",
+    o: ["Su", "Protein", "Vitamin", "Renk"],
+    c: 1,
+    e: "Balık unu yüksek kaliteli protein kaynağıdır."
+  },
+  {
+    q: "Balıkların su yüzeyinde toplanması aşağıdakilerden hangisini gösterir?   (Su Kalitesi)",
+    o: ["Düşük oksijen", "Uygun pH", "Temiz su", "Yüksek oksijen"],
+    c: 3,
+    e: "Balıklar oksijen için yüzeye çıkar."
+  },
+  {
+    q: "Balıklarda su kalitesinin bozulması aşağıdakilerden hangisine neden olur?   (Balık Besleme)",
+    o: ["Büyüme artışı", "Vitamin artışı", "Hastalık riski", "Oksijen artışı"],
+    c: 2,
+    e: "Kötü su kalitesi hastalıkları artırır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini bozar?   (Su Kalitesi)",
+    o: ["Atık birikimi", "Temizlik", "Oksijen", "Fotosentez"],
+    c: 0,
+    e: "Atıklar suyu kirletir."
+  },
+  {
+    q: "Balık yemlerinde kullanılan mineral maddeler aşağıdakilerden hangisi için gereklidir?   (Balık Besleme)",
+    o: ["Renk değişimi", "Kemik ve iskelet gelişimi", "Enerji üretimi", "Su artırımı"],
+    c: 1,
+    e: "Mineraller özellikle kemik ve iskelet yapısında görev alır."
+  },
+  {
+    q: "Amonyak (NH3) zehirliliğini azaltmak için aşağıdakilerden hangisi yapılmalıdır?   (Su Kalitesi)",
+    o: ["Yem artırılmalı", "pH yükseltilmeli", "Sıcaklık artırılmalı", "pH düşürülmeli"],
+    c: 3,
+    e: "pH düştükçe toksik NH3 azalır."
+  },
+  {
+    q: "Aşağıdakilerden hangisi su kalitesini korur?   (Su Kalitesi)",
+    o: ["Temizlik", "Atık", "Düzensizlik", "Kir"],
+    c: 0,
+    e: "Temizlik kaliteyi korur."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balıklar için stres kaynağıdır?   (Su Kalitesi)",
+    o: ["Dengeli oksijen", "Uygun pH", "Ani sıcaklık değişimi", "Temiz su"],
+    c: 2,
+    e: "Ani değişimler balıkları strese sokar."
+  },
+  {
+    q: "Aşağıdakilerden hangisi balık sağlığını korur?   (Su Kalitesi)",
+    o: ["Aşırı yemleme", "Kirli su", "Stres", "Uygun su kalitesi"],
+    c: 3,
+    e: "Kaliteli su sağlıklı üretim sağlar."
+  }
+];
+
+  document.getElementById("mainTitle").textContent = `${CURRENT_SUBJECT} Deneme Sınavı`;
+  document.getElementById("headerSubject").textContent = CURRENT_SUBJECT;
+  document.getElementById("sourceTag").textContent = SOURCE_TEXT;
+  document.title = CURRENT_SUBJECT;
+
+  if (performance.navigation.type === performance.navigation.TYPE_RELOAD || !sessionStorage.getItem("session_active")) {
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith(storagePrefix())) localStorage.removeItem(k);
+    });
+    sessionStorage.setItem("session_active", "true");
+  }
+
+  let currentQuestions = [];
+  let currentIndex = 0;
+  let solvedIndex = -1;
+  let userAnswers = {};
+  let currentSetKey = "";
+  let stats = { correct: 0, wrong: 0 };
+
+  function storagePrefix() {
+    return "exam_" + CURRENT_SUBJECT.replace(/\s+/g, "_") + "_";
+  }
+
+  function setStateKey(index) {
+    return storagePrefix() + "state_set_" + index;
+  }
+
+  function normalizeQuestion(q, originalIndex) {
+    return {
+      id: q.id || ("q_" + originalIndex + "_" + Math.random().toString(36).slice(2, 8)),
+      originalNo: originalIndex + 1,
+      q: q.q,
+      o: [...q.o],
+      c: q.c,
+      e: q.e || "",
+      isRetry: q.isRetry || false,
+      retryFrom: q.retryFrom || null,
+      retryCount: q.retryCount || 0,
+      answeredCorrectly: q.answeredCorrectly || false
+    };
+  }
+
+  function initMenu() {
+    const menuGrid = document.getElementById("menuGrid");
+    menuGrid.innerHTML = "";
+
+    const totalSets = Math.ceil(questions.length / QUESTIONS_PER_SET);
+
+    let setsPerButton = 1;
+    let buttonCount = totalSets;
+
+    if (buttonCount > 10) {
+      setsPerButton = 2;
+      buttonCount = Math.ceil(totalSets / setsPerButton);
+    }
+
+    buttonCount = Math.min(buttonCount, 10);
+
+    for (let i = 0; i < buttonCount; i++) {
+      const startSetNo = i * setsPerButton + 1;
+      const endSetNo = Math.min(startSetNo + setsPerButton - 1, totalSets);
+
+      const start = (startSetNo - 1) * QUESTIONS_PER_SET;
+      const end = Math.min(endSetNo * QUESTIONS_PER_SET, questions.length);
+
+      if (start >= questions.length) continue;
+
+      const key = setStateKey(i);
+
+      const saved = JSON.parse(localStorage.getItem(key) || "null");
+      const solved = saved ? Object.keys(saved.userAnswers || {}).length : 0;
+      const correct = saved?.stats?.correct || 0;
+      const wrong = saved?.stats?.wrong || 0;
+
+      const totalCurrent = saved?.currentQuestions?.length || (end - start);
+      const isCompleted = saved ? (solved >= totalCurrent && totalCurrent > 0) : false;
+
+      const label = startSetNo === endSetNo
+        ? `Deneme-${startSetNo}`
+        : `Deneme-${startSetNo}-${endSetNo}`;
+
+      const btn = document.createElement("button");
+      btn.className = `menu-btn ${isCompleted ? "locked" : ""}`;
+      btn.innerHTML = `
+        <strong>${label}</strong><br>
+        <small>${end - start} Soru | Çözülen ${solved} (Doğru ${correct} Yanlış ${wrong})</small>
+      `;
+
+      if (!isCompleted) {
+        btn.onclick = () => startSet(i, key, start, end);
+      }
+
+      menuGrid.appendChild(btn);
+    }
+  }
+
+  function startSet(idx, key, start, end) {
+    currentSetKey = key;
+
+    const saved = JSON.parse(localStorage.getItem(key) || "null");
+
+    if (saved) {
+      currentQuestions = saved.currentQuestions;
+      currentIndex = saved.currentIndex;
+      solvedIndex = saved.solvedIndex;
+      userAnswers = saved.userAnswers || {};
+      stats = saved.stats || { correct: 0, wrong: 0 };
+    } else {
+      currentQuestions = questions.slice(start, end).map((q, i) => normalizeQuestion(q, start + i));
+      currentIndex = 0;
+      solvedIndex = -1;
+      userAnswers = {};
+      stats = { correct: 0, wrong: 0 };
+      saveState();
+    }
+
+    document.getElementById("menuContainer").style.display = "none";
+    document.getElementById("quizContainer").style.display = "block";
+    document.getElementById("headerSubject").textContent = CURRENT_SUBJECT;
+    loadQuestion();
+    window.scrollTo(0, 0);
+  }
+
+  function getQuestionTitle(q) {
+    return `Soru-${q.originalNo}: ${q.q}`;
+  }
+
+  function loadQuestion() {
+    const q = currentQuestions[currentIndex];
+    const progress = ((currentIndex + 1) / currentQuestions.length) * 100;
+
+    document.getElementById("progressBar").style.width = progress + "%";
+    document.getElementById("footerLeft").textContent = `Kalan: ${Math.max(currentQuestions.length - (currentIndex + 1), 0)}`;
+    document.getElementById("footerRight").textContent = `${currentIndex + 1} / ${currentQuestions.length}`;
+    document.getElementById("questionText").textContent = getQuestionTitle(q);
+
+    const retryBadge = document.getElementById("retryBadge");
+    retryBadge.style.display = q.isRetry ? "block" : "none";
+
+    const optArea = document.getElementById("optionsArea");
+    const expArea = document.getElementById("explanationArea");
+    optArea.innerHTML = "";
+    expArea.style.display = "none";
+    expArea.innerHTML = "";
+
+    const letters = ["A", "B", "C", "D"];
+
+    q.o.forEach((opt, idx) => {
+      const btn = document.createElement("button");
+      btn.className = "option-btn";
+      btn.innerHTML = `<strong>${letters[idx]})</strong> ${opt}`;
+
+      if (currentIndex <= solvedIndex) {
+        btn.disabled = true;
+        const userChoice = userAnswers[currentIndex];
+
+        if (idx === userChoice) {
+          if (userChoice === q.c) {
+            btn.classList.add("correct");
+            btn.innerHTML += ` <span class="tick show">✔</span>`;
+          } else {
+            btn.classList.add("wrong");
+          }
+        }
+
+        if (userChoice === q.c) {
+          expArea.innerHTML = `<strong>Açıklama:</strong> ${q.e}`;
+          expArea.style.display = "block";
+        } else if (q.isRetry) {
+          if (idx === q.c) {
+            btn.classList.add("correct");
+            btn.innerHTML += ` <span class="tick show">✔</span>`;
+          }
+          expArea.innerHTML = `<strong>Açıklama:</strong> ${q.e}`;
+          expArea.style.display = "block";
+        }
+      } else {
+        btn.onclick = () => selectOption(idx);
+      }
+
+      optArea.appendChild(btn);
+    });
+
+    document.getElementById("prevBtn").style.visibility = currentIndex > 0 ? "visible" : "hidden";
+    document.getElementById("nextBtn").style.visibility = currentIndex <= solvedIndex ? "visible" : "hidden";
+  }
+
+  function selectOption(idx) {
+    const q = currentQuestions[currentIndex];
+    const isCorrect = idx === q.c;
+
+    userAnswers[currentIndex] = idx;
+    solvedIndex = Math.max(solvedIndex, currentIndex);
+
+    if (isCorrect) {
+      stats.correct++;
+      q.answeredCorrectly = true;
+    } else {
+      stats.wrong++;
+
+      if (!q.isRetry) {
+        const retryQuestion = {
+          ...q,
+          isRetry: true,
+          retryFrom: q.originalNo,
+          retryCount: 1
+        };
+
+        const insertIndex = Math.min(currentIndex + 6, currentQuestions.length);
+        currentQuestions.splice(insertIndex, 0, retryQuestion);
+      }
+    }
+
+    saveState();
+    loadQuestion();
+  }
+
+  function saveState() {
+    localStorage.setItem(currentSetKey, JSON.stringify({
+      currentQuestions,
+      currentIndex,
+      solvedIndex,
+      userAnswers,
+      stats
+    }));
+  }
+
+  function goForward() {
+    if (currentIndex < solvedIndex) {
+      currentIndex = solvedIndex + 1;
+    } else if (currentIndex < currentQuestions.length - 1) {
+      currentIndex++;
+    } else {
+      return showMenu();
+    }
+
+    saveState();
+    loadQuestion();
+    window.scrollTo(0, 0);
+  }
+
+  function goBack() {
+    if (currentIndex > 0) {
+      currentIndex--;
+      saveState();
+      loadQuestion();
+      window.scrollTo(0, 0);
+    }
+  }
+
+  function showMenu() {
+    document.getElementById("quizContainer").style.display = "none";
+    document.getElementById("menuContainer").style.display = "block";
+    initMenu();
+    window.scrollTo(0, 0);
+  }
+
+  function clearAllStatistics() {
+    if (confirm("Tüm veriler sıfırlansın mı?")) {
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith(storagePrefix())) localStorage.removeItem(k);
+      });
+      initMenu();
+    }
+  }
+
+  function resetCurrentSet() {
+    if (confirm("Bu deneme sıfırlansın mı?")) {
+      localStorage.removeItem(currentSetKey);
+      showMenu();
+    }
+  }
+
+  initMenu();
+</script>
+</body>
+</html>
