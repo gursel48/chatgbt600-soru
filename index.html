@@ -1,0 +1,3083 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>chtgpt soruları Deneme Sınavı</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f4f8;
+      margin: 0;
+      padding: 10px;
+      display: flex;
+      justify-content: center;
+      padding-bottom: 80px;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 860px;
+    }
+
+    .menu-container, .quiz-container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      width: 100%;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .menu-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: left;
+      cursor: pointer;
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: white;
+    }
+
+    .menu-btn.locked {
+      background: linear-gradient(135deg, #6c757d, #495057);
+      cursor: not-allowed;
+      order: 999;
+      opacity: 0.85;
+    }
+
+    .wrong-menu-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: left;
+      cursor: pointer;
+      background: linear-gradient(135deg, #dc3545, #a71d2a);
+      color: white;
+      order: 9999;
+      animation: wrongBlink 10s infinite;
+    }
+
+    @keyframes wrongBlink {
+      0%, 45% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(220,53,69,0);
+      }
+      50% {
+        opacity: 0.35;
+        transform: scale(1.02);
+        box-shadow: 0 0 18px rgba(220,53,69,0.45);
+      }
+      55%, 100% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(220,53,69,0);
+      }
+    }
+
+    .quiz-container {
+      display: none;
+      position: relative;
+      padding-top: 85px;
+      min-height: 100vh;
+    }
+
+    .progress-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 6px;
+      background: #28a745;
+      transition: 0.3s;
+      width: 0%;
+      border-radius: 14px 14px 0 0;
+    }
+
+    .main-menu-btn {
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: calc(1rem + 4pt);
+      color: #333;
+      padding: 5px 0;
+    }
+
+    .header-info {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding-right: 110px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+      flex: 1;
+      flex-wrap: wrap;
+    }
+
+    .header-subject {
+      font-weight: normal;
+      color: #777;
+      font-size: 0.95rem;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .retry-badge {
+      display: none;
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffe69c;
+      font-weight: bold;
+      font-size: 0.95rem;
+    }
+
+    .question-title {
+      margin-top: 0;
+      margin-bottom: 16px;
+      line-height: 1.45;
+      font-size: 1.2rem;
+      color: #222;
+    }
+
+    .option-btn {
+      width: 100%;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 12px;
+      border: 2px solid #e9ecef;
+      background: #f8f9fa;
+      text-align: left;
+      cursor: pointer;
+      font-size: 1.05rem;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+      position: relative;
+    }
+
+    .option-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+
+    .option-btn:disabled {
+      cursor: default;
+    }
+
+    .option-btn.correct {
+      background: #d4edda !important;
+      border-color: #28a745 !important;
+      color: #155724 !important;
+      font-weight: bold;
+    }
+
+    .option-btn.wrong {
+      background: #f8d7da !important;
+      border-color: #dc3545 !important;
+      color: #721c24 !important;
+      font-weight: bold;
+    }
+
+    .tick {
+      display: inline-block;
+      margin-left: 10px;
+      color: #1f9d45;
+      font-weight: bold;
+      opacity: 0;
+      transform: scale(0.4);
+    }
+
+    .tick.show {
+      animation: popTick 0.45s ease forwards;
+    }
+
+    @keyframes popTick {
+      0%   { opacity: 0; transform: scale(0.4); }
+      60%  { opacity: 1; transform: scale(1.2); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .explanation {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background: #eaf2f8;
+      border-left: 5px solid #2980b9;
+      border-radius: 8px;
+      line-height: 1.5;
+    }
+
+    .nav-controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 25px;
+    }
+
+    .nav-btn {
+      flex: 1;
+      padding: 18px;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .next-btn { background: #007bff; }
+    .prev-btn {
+      background: #e9ecef;
+      color: #dc3545 !important;
+      border: 1px solid #ddd;
+    }
+
+    .quiz-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+      color: #666;
+      font-weight: bold;
+      font-size: 0.9rem;
+      flex-wrap: wrap;
+    }
+
+    .disclaimer-box {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fdfdfd;
+      border: 1px solid #eee;
+      border-radius: 10px;
+      color: #888;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    .disclaimer-title {
+      display: block;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+    }
+
+    .source-tag {
+      position: fixed;
+      bottom: 8px;
+      left: 8px;
+      background: rgba(0, 0, 0, 0.05);
+      color: #777;
+      padding: 5px 10px;
+      border-radius: 10px;
+      font-size: 0.72rem;
+      font-weight: bold;
+      z-index: 9999;
+    }
+
+    .reset-set-btn {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      background: #ffc107;
+      border: none;
+      padding: 8px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 0.8rem;
+      cursor: pointer;
+      z-index: 5;
+    }
+
+    @media (max-width: 480px) {
+      .quiz-container {
+        padding-top: 110px;
+      }
+
+      .header-info {
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        padding-right: 104px;
+        align-items: flex-start;
+      }
+
+      .header-left {
+        display: block;
+        padding-right: 6px;
+      }
+
+      .main-menu-btn {
+        display: block;
+        font-size: 0.95rem;
+        padding: 0;
+        margin-bottom: 6px;
+      }
+
+      .header-subject {
+        display: block;
+        margin: 0;
+        font-size: 0.82rem;
+        line-height: 1.3;
+        max-width: 100%;
+      }
+
+      .question-title {
+        font-size: 1.05rem;
+      }
+
+      .option-btn {
+        font-size: 1rem;
+        padding: 14px;
+      }
+
+      .reset-set-btn {
+        top: 12px;
+        right: 12px;
+        font-size: 0.75rem;
+        padding: 7px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="menuContainer" class="menu-container">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:20px;">
+      <h1 id="mainTitle" style="margin:0;">chtgpt soruları Deneme Sınavı</h1>
+      <button onclick="clearAllStatistics()" style="background:#dc3545; color:white; border:none; padding:8px 10px; border-radius:8px; cursor:pointer; font-size:0.75rem;">
+        Verileri Sıfırla
+      </button>
+<button onclick="shuffleAllQuestions()" style="background:#28a745;color:white;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:0.75rem;">Soruları Karıştır</button>
+
+    </div>
+
+    <div id="menuGrid" class="menu-grid"></div>
+
+    <div class="disclaimer-box">
+      <span class="disclaimer-title">⚠️ Önemli Uyarı</span>
+      Bu sistemde yer alan içerikler yalnızca eğitim amaçlıdır. İçeriklerin kullanımından doğabilecek doğrudan veya dolaylı hiçbir sorumluluk kabul edilmez. Tüm kullanım sorumluluğu kullanıcıya aittir.
+    </div>
+  </div>
+
+  <div id="quizContainer" class="quiz-container">
+    <div class="progress-bar" id="progressBar"></div>
+
+    <div class="header-info">
+      <div class="header-left">
+        <button onclick="showMenu()" class="main-menu-btn">☰ Ana Menü</button>
+        <span id="headerSubject" class="header-subject"></span>
+      </div>
+    </div>
+
+    <button onclick="resetCurrentSet()" class="reset-set-btn">Seti Sıfırla</button>
+
+    <div id="retryBadge" class="retry-badge">Yalnış cevaplanan soru</div>
+    <h2 id="questionText" class="question-title">...</h2>
+
+    <div id="optionsArea"></div>
+
+    <div class="quiz-footer">
+      <div id="footerLeft">Kalan: 0</div>
+      <div id="footerRight">0 / 0</div>
+    </div>
+
+    <div id="explanationArea" class="explanation"></div>
+
+    <div class="nav-controls">
+      <button id="prevBtn" class="nav-btn prev-btn" onclick="goBack()" style="visibility:hidden;">❮ Önceki</button>
+      <button id="nextBtn" class="nav-btn next-btn" onclick="goForward()" style="visibility:hidden;">Yeni Soru ❯</button>
+    </div>
+  </div>
+</div>
+
+<div class="source-tag" id="sourceTag">Kaynak: yapayzeka/ chtgpt_sorulari_versiyon_3_temiz</div>
+
+<script>
+  const BASE_SUBJECT = "chtgpt soruları";
+  const VERSION_NUMBER = 3;
+
+  function buildVersionName(base, version) {
+    return `${base} Versiyon ${version}`;
+  }
+
+  function buildVersionSlug(base, version) {
+    return `${base.toLowerCase().replace(/ç/g, "c").replace(/ğ/g, "g").replace(/ı/g, "i").replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u").replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "")}_versiyon_${version}`;
+  }
+
+  const CURRENT_SUBJECT = BASE_SUBJECT;
+  const VERSION_SLUG = buildVersionSlug(BASE_SUBJECT, VERSION_NUMBER);
+  const SOURCE_TEXT = `Kaynak: yapayzeka/ chtgpt_sorulari_versiyon_3_temiz`;
+  const QUESTIONS_PER_SET = 30;
+
+  const questions = [
+  {
+    "q": "Aşağıdaki balıklardan hangisinin avlanabilir minimum boyu daha büyüktür?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Kalkan",
+      "Denetimsiz serbest avcılık",
+      "Sardalya",
+      "Mezgit",
+      "Hamsi"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Kalkan\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi “fırsat maliyeti” kavramına örnektir?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "İşçilik ücreti",
+      "Elektrik gideri",
+      "Alternatif yatırımın getirisi",
+      "Mevzuatı tek başına belirlemek",
+      "Yem gideri"
+    ],
+    "c": 2,
+    "e": "Açıklama: Fırsat maliyeti, seçilen karar nedeniyle vazgeçilen en iyi alternatif kazançtır."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su kalitesini belirleyen parametrelerden biridir?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Ses",
+      "Işık",
+      "Renk",
+      "Çözünmüş oksijen",
+      "Balığın pazar değerini belirlemek"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Çözünmüş oksijen\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi suyun tamponlama kapasitesini ifade eder?   (Su Kalitesi)",
+    "o": [
+      "pH",
+      "Alkalinite",
+      "Balığın pazar değerini belirlemek",
+      "Oksijen",
+      "Tuz"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Alkalinite\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi işletme gideridir?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Talep",
+      "Hiçbiri",
+      "Gelir",
+      "Kar",
+      "Maliyet"
+    ],
+    "c": 4,
+    "e": "Açıklama: İşletme giderleri üretim sürecinde katlanılan maliyet kalemlerinden oluşur."
+  },
+  {
+    "q": "Balıklarda açlık süresi uzarsa ilk olarak hangi durum görülür?   (Balık Besleme)",
+    "o": [
+      "Kilo kaybı",
+      "Hızlı büyüme",
+      "Hiçbiri",
+      "Enerji depolanması",
+      "Protein artışı"
+    ],
+    "c": 0,
+    "e": "Açıklama: Uzayan açlıkta önce enerji rezervleri kullanılır; bunun sonucu kilo kaybı görülür."
+  },
+  {
+    "q": "Su ürünleri denetimi hangi kurumun sorumluluğundadır?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "İçişleri Bakanlığı",
+      "Ticaret Bakanlığı",
+      "Sağlık Bakanlığı",
+      "Denetimsiz serbest avcılık",
+      "Tarım ve Orman Bakanlığı"
+    ],
+    "c": 4,
+    "e": "Açıklama: Mevzuatın amacı kaynakları korumak, kurallara uyumu sağlamak ve sürdürülebilirliği desteklemektir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi balıkta ileri düzey bozulma belirtisidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Parlak deri",
+      "Amonyak kokusu",
+      "Vergi indirimi sağlamak",
+      "Hafif koku",
+      "Sert et"
+    ],
+    "c": 1,
+    "e": "Açıklama: Keskin kötü koku ve amonyak benzeri koku ileri düzey bozulmanın tipik göstergesidir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su ürünleri denetiminde görevli kurumdur?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Tarım ve Orman Bakanlığı",
+      "Sağlık Bakanlığı",
+      "İçişleri Bakanlığı",
+      "Ticaret Bakanlığı",
+      "Denetimsiz serbest avcılık"
+    ],
+    "c": 0,
+    "e": "Açıklama: Mevzuatın amacı kaynakları korumak, kurallara uyumu sağlamak ve sürdürülebilirliği desteklemektir."
+  },
+  {
+    "q": "Balık yemlerinde kullanılan vitaminlerin eksikliği aşağıdakilerden hangisine yol açar?   (Balık Besleme)",
+    "o": [
+      "Hızlı büyüme",
+      "Su artışı",
+      "Metabolik bozukluk",
+      "Ambalaj rengini değiştirmek",
+      "Sağlık artışı"
+    ],
+    "c": 2,
+    "e": "Açıklama: Vitamin eksikliği metabolik süreçleri bozduğu için büyüme geriliği, hastalık ve deformasyon görülebilir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su ürünlerinde en önemli kalite kaybı nedenidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Renk",
+      "Ses",
+      "Vergi indirimi sağlamak",
+      "Sıcaklık kontrolünün sağlanamaması",
+      "Işık"
+    ],
+    "c": 3,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su kirliliğinde en tehlikeli ağır metallerden biridir?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Potasyum",
+      "Sodyum",
+      "Cıva",
+      "Kalsiyum",
+      "Protein sentezi"
+    ],
+    "c": 2,
+    "e": "Açıklama: Ağır metaller toksiktir, canlı dokuda birikebilir ve gıda güvenliği açısından risk oluşturur."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su ürünleri denetiminde kullanılan bir yöntemdir?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Denetimsiz serbest avcılık",
+      "Belge inceleme, gözlem ve fiziki kontrolün birlikte kullanılması",
+      "Sadece sözlü beyan alınması",
+      "Denetim yapılmaması",
+      "Yalnızca uzaktan tahmin yapılması"
+    ],
+    "c": 1,
+    "e": "Açıklama: Mevzuatın amacı kaynakları korumak, kurallara uyumu sağlamak ve sürdürülebilirliği desteklemektir."
+  },
+  {
+    "q": "Balıklarda en hızlı büyüme hangi dönemde gerçekleşir?   (Balık Besleme)",
+    "o": [
+      "Gençlik",
+      "Açlık",
+      "Yaşlılık",
+      "Hiçbiri",
+      "Hastalık"
+    ],
+    "c": 0,
+    "e": "Açıklama: Genç dönemde metabolizma ve doku yapımı daha hızlı olduğu için büyüme potansiyeli yüksektir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi balıkçılıkta sürdürülebilirliğin sağlanmasında en etkili yöntemdir?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Aşırı avcılık",
+      "Denetimsizlik",
+      "Rastgele av",
+      "Denetimsiz serbest avcılık",
+      "Bilimsel yönetim"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Bilimsel yönetim\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi uygun depolama koşuludur?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Açık ortam",
+      "Vergi indirimi sağlamak",
+      "Yüksek sıcaklık",
+      "Düşük sıcaklık",
+      "Kirli ortam"
+    ],
+    "c": 3,
+    "e": "Açıklama: Düşük sıcaklık ve uygun depolama koşulları mikrobiyal bozulmayı yavaşlatır."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su ürünleri avcılığında yasak dönemleri ifade eder?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Av yasağı",
+      "Denetim",
+      "Ruhsat",
+      "Denetimsiz serbest avcılık",
+      "Kota"
+    ],
+    "c": 0,
+    "e": "Açıklama: Mevzuatın amacı kaynakları korumak, kurallara uyumu sağlamak ve sürdürülebilirliği desteklemektir."
+  },
+  {
+    "q": "Bir balık işletmesinde hastalık nedeniyle %20 ölüm gerçekleşirse bu durum ilk olarak neyi etkiler?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Sabit maliyetleri",
+      "Pazarlama hızını artırmak",
+      "Ruhsatı",
+      "Geliri",
+      "Bina değerini"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Geliri\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi kalite kontrol sürecinin amacıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Reklam yapmak",
+      "Fiyat belirlemek",
+      "Üretimi azaltmak",
+      "Vergi indirimi sağlamak",
+      "Ürünün uygunluğunu sağlamak"
+    ],
+    "c": 4,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Biyobüyütme (biomagnification) aşağıdakilerden hangisini ifade eder?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Oksijen artışı",
+      "Besin zincirinde artarak birikme",
+      "Su berraklığı",
+      "Hiçbiri",
+      "Kirliliğin azalması"
+    ],
+    "c": 1,
+    "e": "Açıklama: Biyobüyütmede kirleticiler besin zincirinde üst basamaklara çıkıldıkça daha yüksek düzeyde birikir."
+  },
+  {
+    "q": "Balıklarda beyaz benek hastalığında görülen belirti aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    "o": [
+      "Siyah lekeler",
+      "Pazarlama hızını artırmak",
+      "Beyaz noktalar",
+      "Şişme",
+      "Kızarıklık"
+    ],
+    "c": 2,
+    "e": "Açıklama: Beyaz benek hastalığında deri ve yüzgeçler üzerinde tuz serpilmiş gibi beyaz noktalar görülür."
+  },
+  {
+    "q": "Balık etinin hızlı bozulmasının temel nedeni aşağıdakilerden hangisidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Düşük yağ",
+      "Yüksek su oranı",
+      "Düşük protein",
+      "Düşük vitamin",
+      "Vergi indirimi sağlamak"
+    ],
+    "c": 1,
+    "e": "Açıklama: Keskin kötü koku ve amonyak benzeri koku ileri düzey bozulmanın tipik göstergesidir."
+  },
+  {
+    "q": "Balıklarda aşırı protein verilmesi aşağıdakilerden hangisine neden olur?   (Balık Besleme)",
+    "o": [
+      "Ambalaj rengini değiştirmek",
+      "Hızlı büyüme",
+      "Su temizliği",
+      "Vitamin artışı",
+      "Maliyet artışı"
+    ],
+    "c": 4,
+    "e": "Açıklama: Aşırı protein ekonomik kayıptır; fazlası büyümeye değil enerjiye ve azotlu atığa dönüşebilir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi talep üzerinde etkili değildir?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Gelir",
+      "Tüketici tercihi",
+      "Fiyat",
+      "Su sıcaklığı",
+      "Mevzuatı tek başına belirlemek"
+    ],
+    "c": 3,
+    "e": "Açıklama: Ekonomik göstergeler üretim miktarı, satış fiyatı ve maliyetler arasındaki ilişkiyle değerlendirilir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi yasak av araçlarından biri olabilir?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Zıpkın",
+      "Olta",
+      "Trol ağı (yasak bölgede)",
+      "Kepçe",
+      "Denetimsiz serbest avcılık"
+    ],
+    "c": 2,
+    "e": "Açıklama: Mevzuatın amacı kaynakları korumak, kurallara uyumu sağlamak ve sürdürülebilirliği desteklemektir."
+  },
+  {
+    "q": "Balıklarda solungaç hastalıkları en çok hangi durumu etkiler?   (Balık Hastalıkları)",
+    "o": [
+      "Solunum",
+      "Tat",
+      "Renk",
+      "Büyüme",
+      "Pazarlama hızını artırmak"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Solunum\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balık yemlerinde vitaminlerin fazla verilmesi aşağıdakilerden hangisine neden olabilir?   (Balık Besleme)",
+    "o": [
+      "Ambalaj rengini değiştirmek",
+      "Sağlık sorunları",
+      "Su temizliği",
+      "Protein artışı",
+      "Büyüme artışı"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Sağlık sorunları\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi balıkçılıkta yasal bir uygulamadır?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Boy yasağına uyum",
+      "Kaçak av",
+      "Yasak dönemde av",
+      "Ruhsatsız av",
+      "Denetimsiz serbest avcılık"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Boy yasağına uyum\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi soğuk zincirin temel amacıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Vergi indirimi sağlamak",
+      "Rengi değiştirmek",
+      "Mikroorganizma gelişimini yavaşlatmak",
+      "Balığı kurutmak",
+      "Tadı artırmak"
+    ],
+    "c": 2,
+    "e": "Açıklama: Sıcaklık kontrolü bozulduğunda mikrobiyal çoğalma hızlanır ve ürün kalitesi hızla düşer."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi balıklarda paraziter hastalıklara örnektir?   (Balık Hastalıkları)",
+    "o": [
+      "Aeromonas",
+      "VHS",
+      "Columnaris",
+      "Pazarlama hızını artırmak",
+      "Lernaea"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Lernaea\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Sudaki çözünmüş oksijenin azalması ilk olarak hangi canlıları etkiler?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Bitkiler",
+      "Algler",
+      "Bakteriler",
+      "Balıklar",
+      "Balık eti sertliği"
+    ],
+    "c": 3,
+    "e": "Açıklama: Çözünmüş oksijen, sucul canlıların yaşamı için kritik parametredir; düşmesi önce solunumu etkiler."
+  },
+  {
+    "q": "Türkiye’de hamsi için belirlenen minimum avlanma boyu yaklaşık kaç cm’dir?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Rastgele boy sınırı",
+      "7 cm",
+      "9 cm",
+      "12 cm",
+      "5 cm"
+    ],
+    "c": 2,
+    "e": "Açıklama: Minimum boy uygulaması, balığın en az bir kez üremesine fırsat vererek stokların korunmasını amaçlar."
+  },
+  {
+    "q": "Balık yemlerinde kullanılan soya küspesi hangi amaçla kullanılır?   (Balık Besleme)",
+    "o": [
+      "Ambalaj rengini değiştirmek",
+      "Renk vermek için",
+      "Mineral sağlamak için",
+      "Su artırmak için",
+      "Protein kaynağı olarak"
+    ],
+    "c": 4,
+    "e": "Açıklama: Soya küspesi yemlerde yaygın kullanılan bitkisel protein kaynaklarından biridir."
+  },
+  {
+    "q": "Nitrit (NO2) aşağıdakilerden hangisine neden olur?   (Su Kalitesi)",
+    "o": [
+      "Kan zehirlenmesi",
+      "pH artışı",
+      "Kas gelişiminin artması",
+      "Oksijen artışı",
+      "Tuz artışı"
+    ],
+    "c": 0,
+    "e": "Açıklama: Nitrit hemoglobini methemoglobine çevirerek oksijen taşınmasını bozar."
+  },
+  {
+    "q": "Balıklarda görülen “beyaz benek” hastalığı en çok hangi ortamda hızla yayılır?   (Balık Hastalıkları)",
+    "o": [
+      "Stabil ortam",
+      "Dengeli beslenme",
+      "Temiz su",
+      "Ani sıcaklık değişimlerinde",
+      "Pazarlama hızını artırmak"
+    ],
+    "c": 3,
+    "e": "Açıklama: Beyaz benek hastalığında deri ve yüzgeçler üzerinde tuz serpilmiş gibi beyaz noktalar görülür."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su kalitesi parametresi değildir?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Balığın pazar değerini belirlemek",
+      "Ses",
+      "pH",
+      "Sıcaklık",
+      "Oksijen"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Ses\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıklarda mantar enfeksiyonları en çok hangi bölgede görülür?   (Balık Hastalıkları)",
+    "o": [
+      "Kas",
+      "Kemik",
+      "Pazarlama hızını artırmak",
+      "Deri",
+      "Solungaç"
+    ],
+    "c": 3,
+    "e": "Açıklama: Mantar enfeksiyonları çoğu zaman yaralanmış veya stres altındaki balıklarda fırsatçı olarak gelişir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi balık yemlerinin enerji içeriğini artırır?   (Balık Besleme)",
+    "o": [
+      "Ambalaj rengini değiştirmek",
+      "Yağ",
+      "Vitamin",
+      "Mineral",
+      "Su"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Yağ\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Çözünmüş oksijenin düşmesi aşağıdakilerden hangisine neden olur?   (Su Kalitesi)",
+    "o": [
+      "Balık ölümleri",
+      "Bitki artışı",
+      "Su berraklığı",
+      "Balık eti sertliği",
+      "Balık artışı"
+    ],
+    "c": 0,
+    "e": "Açıklama: Çözünmüş oksijen, sucul canlıların yaşamı için kritik parametredir; düşmesi önce solunumu etkiler."
+  },
+  {
+    "q": "Balıklarda düşük oksijen seviyesinde aşağıdakilerden hangisi görülür?   (Balık Besleme)",
+    "o": [
+      "Protein artar",
+      "Hiçbiri",
+      "Yem tüketimi azalır",
+      "Yem tüketimi artar",
+      "Büyüme hızlanır"
+    ],
+    "c": 2,
+    "e": "Açıklama: Doğru seçenek \"Yem tüketimi azalır\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi HACCP sisteminde “önleyici yaklaşım” anlamına gelir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Rastgele kontrol",
+      "Sadece son ürün muayenesi",
+      "Bozulduktan sonra müdahale",
+      "Satış sonrası denetim",
+      "Risk oluşmadan kontrol"
+    ],
+    "c": 4,
+    "e": "Açıklama: Ekonomik göstergeler üretim miktarı, satış fiyatı ve maliyetler arasındaki ilişkiyle değerlendirilir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi üretim planlamasının temel amacıdır?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Mevzuatı tek başına belirlemek",
+      "Rastgele üretim",
+      "Kaynakları etkin kullanmak",
+      "İş yükünü artırmak",
+      "Maliyet artırmak"
+    ],
+    "c": 2,
+    "e": "Açıklama: Doğru seçenek \"Kaynakları etkin kullanmak\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi balıklarda iştahsızlığa neden olabilir?   (Balık Besleme)",
+    "o": [
+      "Yeterli oksijen",
+      "Stres",
+      "Dengeli yem",
+      "Uygun sıcaklık",
+      "Hiçbiri"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Stres\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi kimyasal kontaminasyona örnektir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Ağır metal",
+      "Mantar",
+      "Parazit",
+      "Mikroorganizma",
+      "Vergi indirimi sağlamak"
+    ],
+    "c": 0,
+    "e": "Açıklama: Ağır metal, pestisit ve benzeri maddeler kimyasal kontaminasyon örneğidir."
+  },
+  {
+    "q": "Balıklarda en uygun yemleme zamanı genellikle aşağıdakilerden hangisidir?   (Balık Besleme)",
+    "o": [
+      "Öğle saatleri",
+      "Gece",
+      "Ambalaj rengini değiştirmek",
+      "Rastgele",
+      "Sabah ve akşam"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Sabah ve akşam\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi HACCP sisteminin amacıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Sadece son ürün muayenesi",
+      "Üretimi azaltmak",
+      "Fiyat belirlemek",
+      "Gıda güvenliğini sağlamak",
+      "İhracatı artırmak"
+    ],
+    "c": 3,
+    "e": "Açıklama: HACCP, tehlike oluşmadan önce kritik noktaları belirleyip riski önlemeye dayanan bir sistemdir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi ağır metal kirliliğine karşı alınacak önlemdir?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Protein sentezi",
+      "Arıtma",
+      "Rastgele kullanım",
+      "Atık bırakmak",
+      "Denetimsizlik"
+    ],
+    "c": 1,
+    "e": "Açıklama: Ağır metaller toksiktir, canlı dokuda birikebilir ve gıda güvenliği açısından risk oluşturur."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi avcılıkta kullanılan yasal araçlardan biridir?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Olta",
+      "Zehir",
+      "Denetimsiz serbest avcılık",
+      "Dinamit",
+      "Patlayıcı"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Olta\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Yemlerin suya dayanıklılığı neden önemlidir?   (Balık Besleme)",
+    "o": [
+      "Ambalaj rengini değiştirmek",
+      "Oksijen artırmak için",
+      "Tat vermek için",
+      "Dağılmayı önlemek için",
+      "Renk artırmak için"
+    ],
+    "c": 3,
+    "e": "Açıklama: Suda hemen dağılan yem hem besin kaybına yol açar hem de suyu kirletir."
+  },
+  {
+    "q": "Balıklarda mantar hastalıkları genellikle hangi durumda ortaya çıkar?   (Balık Hastalıkları)",
+    "o": [
+      "Pazarlama hızını artırmak",
+      "Sağlıklı ortamda",
+      "Yüksek oksijende",
+      "Düşük sıcaklıkta",
+      "Yaralanma ve stres durumunda"
+    ],
+    "c": 4,
+    "e": "Açıklama: Mantar enfeksiyonları çoğu zaman yaralanmış veya stres altındaki balıklarda fırsatçı olarak gelişir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi soğuk zincirin kırılması durumunda ilk etkilenen özelliktir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Renk",
+      "Boy",
+      "Mikrobiyal yük",
+      "Vergi indirimi sağlamak",
+      "Tat"
+    ],
+    "c": 2,
+    "e": "Açıklama: Sıcaklık kontrolü bozulduğunda mikrobiyal çoğalma hızlanır ve ürün kalitesi hızla düşer."
+  },
+  {
+    "q": "Aşağıdaki türlerden hangisinde minimum av boyu uygulanmasının temel nedeni daha geç eşeysel olgunluğa ulaşmasıdır?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Hamsi",
+      "Kalkan",
+      "İstavrit",
+      "Rastgele boy sınırı",
+      "Sardalya"
+    ],
+    "c": 1,
+    "e": "Açıklama: Minimum boy uygulaması, balığın en az bir kez üremesine fırsat vererek stokların korunmasını amaçlar."
+  },
+  {
+    "q": "Balıklarda stres aşağıdakilerden hangisine neden olur?   (Balık Besleme)",
+    "o": [
+      "Yem tüketimi azalır",
+      "Yem tüketimi artar",
+      "Protein artar",
+      "Büyüme artar",
+      "Hiçbiri"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Yem tüketimi azalır\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balık yemlerinin suya atıldıktan sonra dağılması aşağıdakilerden hangisine neden olur?   (Balık Besleme)",
+    "o": [
+      "Balık büyümesi",
+      "Oksijen artışı",
+      "Su kalitesinin iyileşmesi",
+      "Besin kaybı",
+      "Ambalaj rengini değiştirmek"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Besin kaybı\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi iyi üretim uygulaması (GMP) kapsamındadır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Kişisel hijyeni göz ardı etmek",
+      "Kirli ekipman",
+      "Düzensiz üretim",
+      "Çapraz bulaşma",
+      "Personel eğitimi"
+    ],
+    "c": 4,
+    "e": "Açıklama: GMP, hijyenik üretim için personel, ekipman ve proses düzeninin doğru yürütülmesini kapsar."
+  },
+  {
+    "q": "Türkiye’de levrek balığı için minimum av boyu uygulaması hangi amaca hizmet eder?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Ticareti azaltmak",
+      "Fiyat yükseltmek",
+      "Üreme şansı vermek",
+      "Rastgele boy sınırı",
+      "İhracatı artırmak"
+    ],
+    "c": 2,
+    "e": "Açıklama: Minimum boy uygulaması, balığın en az bir kez üremesine fırsat vererek stokların korunmasını amaçlar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi gıda güvenliği açısından en önemli kriterdir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Tat",
+      "Vergi indirimi sağlamak",
+      "Renk",
+      "Mikrobiyal güvenlik",
+      "Boy"
+    ],
+    "c": 3,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Balıklarda hastalıkların ortaya çıkmasında en önemli faktör aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    "o": [
+      "Stres ve kötü su koşulları",
+      "Yüksek protein",
+      "Ses",
+      "Pazarlama hızını artırmak",
+      "Işık"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Stres ve kötü su koşulları\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su ürünlerinde kalite kontrolün ilk aşamasıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Satış",
+      "Reklam",
+      "Vergi indirimi sağlamak",
+      "Paketleme",
+      "Hammadde kontrolü"
+    ],
+    "c": 4,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Balıklar için en uygun pH aralığı aşağıdakilerden hangisine en yakındır?   (Su Kalitesi)",
+    "o": [
+      "9–11",
+      "4–5",
+      "6.5–8.5",
+      "Su berraklığı",
+      "2–4"
+    ],
+    "c": 2,
+    "e": "Açıklama: Doğru seçenek \"6.5–8.5\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi değişken maliyetlerin artmasına neden olur?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Mevzuatı tek başına belirlemek",
+      "Üretim artışı",
+      "Planlama",
+      "Eğitim",
+      "Teknoloji"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Üretim artışı\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su ürünleri denetimini destekler?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Kurallara uyum",
+      "Kaçak avcılık",
+      "Denetimsiz serbest avcılık",
+      "Rastgele av",
+      "Denetimsizlik"
+    ],
+    "c": 0,
+    "e": "Açıklama: Mevzuatın amacı kaynakları korumak, kurallara uyumu sağlamak ve sürdürülebilirliği desteklemektir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi amonyak oluşumunun kaynağıdır?   (Su Kalitesi)",
+    "o": [
+      "Işık",
+      "Oksijen",
+      "Fotosentez",
+      "Balık dışkısı ve yem artığı",
+      "Vitamin kaybı"
+    ],
+    "c": 3,
+    "e": "Açıklama: Amonyak özellikle pH ve sıcaklık yükseldiğinde daha toksik hale gelir ve balıklar için risk oluşturur."
+  },
+  {
+    "q": "Talep artarsa aşağıdakilerden hangisi gerçekleşir?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Fiyat düşer",
+      "Fiyat artar",
+      "Mevzuatı tek başına belirlemek",
+      "Maliyet düşer",
+      "Üretim azalır"
+    ],
+    "c": 1,
+    "e": "Açıklama: Ekonomik göstergeler üretim miktarı, satış fiyatı ve maliyetler arasındaki ilişkiyle değerlendirilir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi çözünmüş oksijenin azalmasına neden olur?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Temiz su",
+      "Fotosentez",
+      "Balık eti sertliği",
+      "Soğuk ortam",
+      "Organik kirlilik"
+    ],
+    "c": 4,
+    "e": "Açıklama: Çözünmüş oksijen, sucul canlıların yaşamı için kritik parametredir; düşmesi önce solunumu etkiler."
+  },
+  {
+    "q": "Balıklarda solungaç parazitleri aşağıdakilerden hangisine neden olur?   (Balık Hastalıkları)",
+    "o": [
+      "Renk değişimi",
+      "Pazarlama hızını artırmak",
+      "Solunum güçlüğü",
+      "Tat artışı",
+      "Protein artışı"
+    ],
+    "c": 2,
+    "e": "Açıklama: Doğru seçenek \"Solunum güçlüğü\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıklarda yemleme sırasında yapılan en büyük hata aşağıdakilerden hangisidir?   (Balık Besleme)",
+    "o": [
+      "Ambalaj rengini değiştirmek",
+      "Uygun ortam",
+      "Dengeli yem",
+      "Aşırı yemleme",
+      "Kontrollü yemleme"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Aşırı yemleme\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi eutrofikasyon sonucu oluşur?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Tuz azalması",
+      "Alg patlaması",
+      "Oksijen artışı",
+      "Balık yeminin sindirimi",
+      "Sıcaklık düşmesi"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Alg patlaması\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıklarda optimum büyüme için aşağıdakilerden hangisi gereklidir?   (Balık Besleme)",
+    "o": [
+      "Dengeli beslenme",
+      "Hiçbiri",
+      "Açlık",
+      "Yüksek stres",
+      "Düşük oksijen"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Dengeli beslenme\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi sürdürülebilir balıkçılık açısından en doğrudur?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Denetimden kaçmak",
+      "Küçük balıkları avlamak",
+      "Üreme döneminde av yapmak",
+      "Denetimsiz serbest avcılık",
+      "Boy ve zaman yasaklarına uymak"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Boy ve zaman yasaklarına uymak\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "pH değeri aşağıdakilerden hangisini ifade eder?   (Su Kalitesi)",
+    "o": [
+      "Sıcaklık",
+      "Su berraklığı",
+      "Asitlik-bazlık durumu",
+      "Oksijen miktarı",
+      "Tuz oranı"
+    ],
+    "c": 2,
+    "e": "Açıklama: pH suyun asidik ya da bazik karakterini gösterir ve balık sağlığı üzerinde doğrudan etkilidir."
+  },
+  {
+    "q": "Balık işleme tesislerinde personel hijyeninin sağlanmaması hangi sonucu doğurur?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Gıda kontaminasyonu",
+      "Vergi indirimi sağlamak",
+      "Maliyet düşüşü",
+      "Raf ömrü uzaması",
+      "Verim artışı"
+    ],
+    "c": 0,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "COD (Kimyasal Oksijen İhtiyacı) neyi ifade eder?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "pH değerini",
+      "Suyun sıcaklığını",
+      "Tuz miktarını",
+      "Kimyasal maddelerin oksijen tüketimini",
+      "Suyun renginin sabit kalması"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Kimyasal maddelerin oksijen tüketimini\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Hamsi balığında minimum av boyu uygulaması aşağıdakilerden hangisi ile doğrudan ilişkilidir?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Oksijen",
+      "Üreme büyüklüğü",
+      "Rastgele boy sınırı",
+      "Balığın rengi",
+      "Su sıcaklığı"
+    ],
+    "c": 1,
+    "e": "Açıklama: Minimum boy uygulaması, balığın en az bir kez üremesine fırsat vererek stokların korunmasını amaçlar."
+  },
+  {
+    "q": "Vitamin eksikliği balıklarda aşağıdakilerden hangisine yol açar?   (Balık Besleme)",
+    "o": [
+      "Hızlı büyüme",
+      "Ambalaj rengini değiştirmek",
+      "Su artışı",
+      "Oksijen artışı",
+      "Hastalık ve deformasyon"
+    ],
+    "c": 4,
+    "e": "Açıklama: Vitamin eksikliği metabolik süreçleri bozduğu için büyüme geriliği, hastalık ve deformasyon görülebilir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su ürünleri yetiştiriciliğinde izin gerektirir?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Denetimsiz serbest avcılık",
+      "Hobi",
+      "Ticari üretim",
+      "Spor",
+      "Balık tutma"
+    ],
+    "c": 2,
+    "e": "Açıklama: Doğru seçenek \"Ticari üretim\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Karlılık aşağıdakilerden hangisi ile hesaplanır?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Fiyat - maliyet",
+      "Mevzuatı tek başına belirlemek",
+      "Üretim - satış",
+      "Gelir - gider",
+      "Talep - arz"
+    ],
+    "c": 3,
+    "e": "Açıklama: Ekonomik göstergeler üretim miktarı, satış fiyatı ve maliyetler arasındaki ilişkiyle değerlendirilir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su ürünlerinde kaliteyi belirleyen faktördür?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Ses",
+      "Tazelik",
+      "Işık",
+      "Renk",
+      "Vergi indirimi sağlamak"
+    ],
+    "c": 1,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Balıklarda büyüme ve doku yapımında en önemli besin öğesi aşağıdakilerden hangisidir?   (Balık Besleme)",
+    "o": [
+      "Vitamin",
+      "Su",
+      "Protein",
+      "Mineral",
+      "Hiçbiri"
+    ],
+    "c": 2,
+    "e": "Açıklama: Doğru seçenek \"Protein\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi balık stoklarını korumaya yönelik bir uygulamadır?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Aşırı av",
+      "Denetimsiz serbest avcılık",
+      "Rastgele av",
+      "Denetimsizlik",
+      "Boy sınırlaması"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Boy sınırlaması\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Eutrofikasyon aşağıdakilerden hangisini ifade eder?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Besin maddesi artışıyla alg patlaması",
+      "pH düşmesi",
+      "Su sıcaklığının düşmesi",
+      "Tuz oranının artması",
+      "Balık yeminin sindirimi"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Besin maddesi artışıyla alg patlaması\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi üretim kararlarını etkileyen ekonomik faktördür?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Hiçbiri",
+      "Renk",
+      "Işık",
+      "Fiyat",
+      "Ses"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Fiyat\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su kirliliği yönetiminin temel amacıdır?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Su kaynaklarını korumak",
+      "Fiyat artırmak",
+      "Ticareti artırmak",
+      "Üretim artırmak",
+      "Hiçbiri"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Su kaynaklarını korumak\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Su ürünlerinde hijyenin temel amacı aşağıdakilerden hangisidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Üretimi artırmak",
+      "Fiyatı yükseltmek",
+      "Tüketici sağlığını korumak",
+      "İhracatı artırmak",
+      "Vergi indirimi sağlamak"
+    ],
+    "c": 2,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi balıklarda mantar hastalıklarının oluşumunu kolaylaştırır?   (Balık Hastalıkları)",
+    "o": [
+      "Temiz su",
+      "Yüksek oksijen",
+      "Pazarlama hızını artırmak",
+      "Sağlıklı deri",
+      "Yaralanma"
+    ],
+    "c": 4,
+    "e": "Açıklama: Mantar enfeksiyonları çoğu zaman yaralanmış veya stres altındaki balıklarda fırsatçı olarak gelişir."
+  },
+  {
+    "q": "Balık yemlerinde kullanılan en pahalı bileşen genellikle hangisidir?   (Balık Besleme)",
+    "o": [
+      "Tuz",
+      "Protein kaynakları",
+      "Su",
+      "Mineral",
+      "Ambalaj rengini değiştirmek"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Protein kaynakları\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi avcılıkta yasak getirilen alanlardan biridir?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Denetimsiz serbest avcılık",
+      "Açık deniz",
+      "Kıyıya yakın alanlar",
+      "Derin deniz",
+      "Uluslararası sular"
+    ],
+    "c": 2,
+    "e": "Açıklama: Mevzuatın amacı kaynakları korumak, kurallara uyumu sağlamak ve sürdürülebilirliği desteklemektir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi amonyağın daha az zararlı formudur?   (Su Kalitesi)",
+    "o": [
+      "NO3",
+      "NH4⁺",
+      "NO2",
+      "NH3",
+      "Balığın pazar değerini belirlemek"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"NH4⁺\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balık ürünlerinde en hızlı bozulma aşağıdaki hangi sıcaklık aralığında gerçekleşir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "-5°C",
+      "0°C",
+      "-18°C",
+      "Vergi indirimi sağlamak",
+      "5–25°C"
+    ],
+    "c": 4,
+    "e": "Açıklama: Keskin kötü koku ve amonyak benzeri koku ileri düzey bozulmanın tipik göstergesidir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi balık yemlerinin raf ömrünü uzatır?   (Balık Besleme)",
+    "o": [
+      "Su",
+      "Nem",
+      "Güneş ışığı",
+      "Serin ve kuru ortam",
+      "Ambalaj rengini değiştirmek"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Serin ve kuru ortam\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su ürünleri avcılığında kota uygulamasının amacıdır?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Stokları korumak",
+      "Fiyat artırmak",
+      "İhracatı artırmak",
+      "Ticareti azaltmak",
+      "Denetimsiz serbest avcılık"
+    ],
+    "c": 0,
+    "e": "Açıklama: Mevzuatın amacı kaynakları korumak, kurallara uyumu sağlamak ve sürdürülebilirliği desteklemektir."
+  },
+  {
+    "q": "Balıklarda protein tasarrufu sağlayan besin öğesi aşağıdakilerden hangisidir?   (Balık Besleme)",
+    "o": [
+      "Ambalaj rengini değiştirmek",
+      "Su",
+      "Mineral",
+      "Yağ",
+      "Vitamin"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Yağ\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi balıkçılıkta koruma alanlarının oluşturulma nedenidir?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Üreme alanlarını korumak",
+      "Fiyat artırmak",
+      "İhracat",
+      "Denetimsiz serbest avcılık",
+      "Ticaret"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Üreme alanlarını korumak\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balık yemlerinin kalitesini düşüren en önemli faktör aşağıdakilerden hangisidir?   (Balık Besleme)",
+    "o": [
+      "Tazelik",
+      "Küflenme",
+      "Uygun depolama",
+      "Ambalaj rengini değiştirmek",
+      "Dengeli içerik"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Küflenme\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıkta rigor mortis (ölüm sertliği) sürecinin uzaması aşağıdakilerden hangisini gösterir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Yağ oranının arttığını",
+      "Bozulmanın hızlandığını",
+      "Vergi indirimi sağlamak",
+      "Protein azaldığını",
+      "Tazeliğin daha uzun sürdüğünü"
+    ],
+    "c": 4,
+    "e": "Açıklama: Ölüm sertliğinin uygun sürede devam etmesi ürünün henüz ileri bozulma aşamasına geçmediğini gösterir."
+  },
+  {
+    "q": "Balıkta kötü koku oluşumunun temel nedeni aşağıdakilerden hangisidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Vergi indirimi sağlamak",
+      "Vitamin artışı",
+      "Mikroorganizmaların faaliyetleri",
+      "Protein sentezi",
+      "Oksijen fazlalığı"
+    ],
+    "c": 2,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi balık fiyatlarının yükselmesine neden olur?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Üretim artışı",
+      "Hiçbiri",
+      "Arz artışı",
+      "Teknoloji",
+      "Talep artışı"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Talep artışı\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "BOD değerinin yüksek olması aşağıdakilerden hangisini gösterir?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Temiz su",
+      "Organik kirlilik",
+      "Suyun renginin sabit kalması",
+      "Düşük sıcaklık",
+      "Yüksek oksijen"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Organik kirlilik\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi uygun hijyen davranışıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "El yıkamak",
+      "Eldivensiz çalışmak",
+      "Çapraz bulaşma",
+      "Vergi indirimi sağlamak",
+      "Kirli ortamda çalışmak"
+    ],
+    "c": 0,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Balık yemlerinde protein kaynaklarının pahalı olmasının nedeni aşağıdakilerden hangisidir?   (Balık Besleme)",
+    "o": [
+      "Ambalaj rengini değiştirmek",
+      "Kolay bulunması",
+      "Yüksek besin değeri",
+      "Su içeriği",
+      "Renk"
+    ],
+    "c": 2,
+    "e": "Açıklama: Protein kaynakları yem maliyetinin en büyük bölümünü oluşturur; bu yüzden rasyonda dengeli kullanılmalıdır."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi sucul canlılar için en kritik sınır parametredir?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Ses",
+      "Hiçbiri",
+      "Işık",
+      "Çözünmüş oksijen",
+      "Renk"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Çözünmüş oksijen\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi gıda güvenliği sistemidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Talep",
+      "Vergi indirimi sağlamak",
+      "HACCP",
+      "Pazarlama",
+      "Arz"
+    ],
+    "c": 2,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "BOD ve COD birlikte değerlendirildiğinde aşağıdakilerden hangisi anlaşılır?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Suyun renginin sabit kalması",
+      "Kirliliğin türü ve seviyesi",
+      "Tuz oranı",
+      "Sıcaklık",
+      "Su rengi"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Kirliliğin türü ve seviyesi\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıklarda yemleme sıklığı arttıkça aşağıdakilerden hangisi sağlanır?   (Balık Besleme)",
+    "o": [
+      "Su kirlenmesi",
+      "Ambalaj rengini değiştirmek",
+      "Hastalık",
+      "Oksijen azalması",
+      "Daha dengeli beslenme"
+    ],
+    "c": 4,
+    "e": "Açıklama: Uygun sıklıkta yemleme, tüketimi dengeler ve yemden yararlanmayı iyileştirebilir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi ekonomik verimliliği artırır?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Planlı üretim",
+      "Stres",
+      "Hiçbiri",
+      "Rastgele üretim",
+      "Denetimsizlik"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Planlı üretim\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "pH yükseldiğinde amonyak dengesi nasıl değişir?   (Su Kalitesi)",
+    "o": [
+      "NH4⁺ artar",
+      "Sabit kalır",
+      "Su berraklığı",
+      "NH3 artar",
+      "Azalır"
+    ],
+    "c": 3,
+    "e": "Açıklama: pH yükseldikçe amonyağın toksik olan serbest NH3 formunun oranı artar."
+  },
+  {
+    "q": "Balık yemlerinde kullanılan katkı maddeleri aşağıdakilerden hangisini iyileştirmek için kullanılır?   (Balık Besleme)",
+    "o": [
+      "Ambalaj rengini değiştirmek",
+      "Rengi",
+      "Su miktarını",
+      "Görünümü",
+      "Sindirimi"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Sindirimi\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi yem maliyetini düşürmeye yardımcı olur?   (Balık Besleme)",
+    "o": [
+      "Gereğinden fazla protein kullanımı",
+      "Küflenmiş yem kullanımı",
+      "Dengeli rasyon hazırlanması",
+      "Ambalaj rengini değiştirmek",
+      "Aşırı yemleme"
+    ],
+    "c": 2,
+    "e": "Açıklama: Doğru seçenek \"Dengeli rasyon hazırlanması\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Arz kavramı aşağıdakilerden hangisini ifade eder?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Üretici miktarı",
+      "Fiyat",
+      "Tüketici talebi",
+      "Mevzuatı tek başına belirlemek",
+      "Satın alma gücü"
+    ],
+    "c": 0,
+    "e": "Açıklama: Ekonomik göstergeler üretim miktarı, satış fiyatı ve maliyetler arasındaki ilişkiyle değerlendirilir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi kaliteli bir yemin özelliğidir?   (Balık Besleme)",
+    "o": [
+      "Aşırı nemli olması",
+      "Yüksek sindirilebilirlik",
+      "Ambalaj rengini değiştirmek",
+      "Küflenmiş olması",
+      "Dengesiz içerik"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Yüksek sindirilebilirlik\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi pH’ın yükselmesine neden olur?   (Su Kalitesi)",
+    "o": [
+      "Asidik maddeler",
+      "Oksijen",
+      "Su",
+      "Bazik maddeler",
+      "Su berraklığı"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Bazik maddeler\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi hijyen kurallarına aykırıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "El yıkamak",
+      "Vergi indirimi sağlamak",
+      "Soğuk depolama",
+      "Temiz ekipman",
+      "Kirli ortam"
+    ],
+    "c": 4,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Balık yemlerinde protein kalitesini belirleyen en önemli unsur aşağıdakilerden hangisidir?   (Balık Besleme)",
+    "o": [
+      "Ambalaj rengini değiştirmek",
+      "Amino asit dengesi",
+      "Renk",
+      "Nem",
+      "Boyut"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Amino asit dengesi\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su ürünlerinde güvenli tüketim için gereklidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Düzensiz üretim",
+      "Açık depolama",
+      "Kirli ortam",
+      "Soğuk zincir",
+      "Vergi indirimi sağlamak"
+    ],
+    "c": 3,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Balıklarda bakteriyel hastalıkların tedavisinde genellikle hangi yöntem kullanılır?   (Balık Hastalıkları)",
+    "o": [
+      "Antibiyotik",
+      "Pazarlama hızını artırmak",
+      "Vitamin",
+      "Su artırma",
+      "Işık"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Antibiyotik\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi denetim faaliyetlerinin temel amacıdır?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Satışı artırmak",
+      "Balık fiyatlarını düşürmek",
+      "Kurallara uyumu sağlamak",
+      "Üretimi azaltmak",
+      "Denetimsiz serbest avcılık"
+    ],
+    "c": 2,
+    "e": "Açıklama: Mevzuatın amacı kaynakları korumak, kurallara uyumu sağlamak ve sürdürülebilirliği desteklemektir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi işletmede zarar oluşmasına neden olur?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Gelirin giderden fazla olması",
+      "Planlama",
+      "Dengeli üretim",
+      "Hiçbiri",
+      "Giderin gelirden fazla olması"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Giderin gelirden fazla olması\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi HACCP sisteminde kritik kontrol noktasıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Satış",
+      "Paketleme",
+      "Riskli aşama",
+      "Sadece son ürün muayenesi",
+      "Temizlik"
+    ],
+    "c": 2,
+    "e": "Açıklama: HACCP, tehlike oluşmadan önce kritik noktaları belirleyip riski önlemeye dayanan bir sistemdir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su kirliliğine neden olan kaynaklardan biridir?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Hiçbiri",
+      "Güneş",
+      "Rüzgar",
+      "Sanayi atıkları",
+      "Yağmur"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Sanayi atıkları\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Amonyak (NH3) toksisitesi aşağıdakilerden hangisi arttıkça yükselir?   (Su Kalitesi)",
+    "o": [
+      "Oksijen",
+      "Sıcaklık ve pH",
+      "Tuz",
+      "Vitamin kaybı",
+      "Sertlik"
+    ],
+    "c": 1,
+    "e": "Açıklama: Amonyak özellikle pH ve sıcaklık yükseldiğinde daha toksik hale gelir ve balıklar için risk oluşturur."
+  },
+  {
+    "q": "Balıklarda büyüme performansını doğrudan etkileyen en önemli faktörlerden biri aşağıdakilerden hangisidir?   (Balık Besleme)",
+    "o": [
+      "Su kalitesi",
+      "Işık",
+      "Ses",
+      "Renk",
+      "Hiçbiri"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Su kalitesi\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıklarda bağışıklık sistemini güçlendiren en önemli faktör aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    "o": [
+      "Düşük oksijen",
+      "Dengeli beslenme",
+      "Aşırı yemleme",
+      "Stres",
+      "Pazarlama hızını artırmak"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Dengeli beslenme\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıkta parlak ve bombeli gözler aşağıdakilerden hangisini gösterir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Tazelik",
+      "Yağ artışı",
+      "Vergi indirimi sağlamak",
+      "Hastalık",
+      "Bozulma"
+    ],
+    "c": 0,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Amonyak (NH3) aşağıdakilerden hangisi için tehlikelidir?   (Su Kalitesi)",
+    "o": [
+      "Ses",
+      "Işık",
+      "Vitamin kaybı",
+      "Balıklar",
+      "Bitkiler"
+    ],
+    "c": 3,
+    "e": "Açıklama: Amonyak özellikle pH ve sıcaklık yükseldiğinde daha toksik hale gelir ve balıklar için risk oluşturur."
+  },
+  {
+    "q": "Yemleme sıklığını belirleyen en önemli faktör aşağıdakilerden hangisidir?   (Balık Besleme)",
+    "o": [
+      "Gün sayısı",
+      "Havuz rengi",
+      "Ambalaj rengini değiştirmek",
+      "Hava durumu",
+      "Balığın türü ve büyüklüğü"
+    ],
+    "c": 4,
+    "e": "Açıklama: Uygun sıklıkta yemleme, tüketimi dengeler ve yemden yararlanmayı iyileştirebilir."
+  },
+  {
+    "q": "Balıklarda hastalıkların erken teşhisi aşağıdakilerden hangisini sağlar?   (Balık Hastalıkları)",
+    "o": [
+      "Yayılmanın hızlanması",
+      "Üretim kaybı",
+      "Kontrol kolaylığı",
+      "Maliyet artışı",
+      "Pazarlama hızını artırmak"
+    ],
+    "c": 2,
+    "e": "Açıklama: Doğru seçenek \"Kontrol kolaylığı\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi kalite kontrol parametresi değildir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Ses",
+      "Vergi indirimi sağlamak",
+      "Koku",
+      "Mikrobiyal yük",
+      "Tazelik"
+    ],
+    "c": 0,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Balık yemlerinin nemli ortamda saklanması aşağıdakilerden hangisine yol açar?   (Balık Besleme)",
+    "o": [
+      "Vitamin sentezi",
+      "Protein artışı",
+      "Ambalaj rengini değiştirmek",
+      "Enerji artışı",
+      "Küflenme"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Küflenme\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Bir işletmede üretim artmasına rağmen kar düşüyorsa bunun en olası nedeni nedir?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Hiçbiri",
+      "Teknoloji",
+      "Maliyet artışı",
+      "Talep artışı",
+      "Verimlilik artışı"
+    ],
+    "c": 2,
+    "e": "Açıklama: Doğru seçenek \"Maliyet artışı\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıklarda en sık görülen dış parazit aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    "o": [
+      "Vitamin eksikliği",
+      "Aeromonas",
+      "Pazarlama hızını artırmak",
+      "Lernaea",
+      "VHS"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Lernaea\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi HACCP kapsamında değerlendirilir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Pazarlama",
+      "Risk analizi",
+      "Sadece son ürün muayenesi",
+      "Reklam",
+      "Fiyat"
+    ],
+    "c": 1,
+    "e": "Açıklama: HACCP, tehlike oluşmadan önce kritik noktaları belirleyip riski önlemeye dayanan bir sistemdir."
+  },
+  {
+    "q": "Türkiye’de su ürünleri faaliyetlerini düzenleyen temel kanun aşağıdakilerden hangisidir?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "5996 sayılı Kanun",
+      "Denetimsiz serbest avcılık",
+      "1380 sayılı Su Ürünleri Kanunu",
+      "2872 sayılı Çevre Kanunu",
+      "5403 sayılı Kanun"
+    ],
+    "c": 2,
+    "e": "Açıklama: Doğru seçenek \"1380 sayılı Su Ürünleri Kanunu\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi eutrofikasyonu hızlandırır?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Temiz su",
+      "Soğuk ortam",
+      "Balık yeminin sindirimi",
+      "Oksijen",
+      "Azot ve fosfor"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Azot ve fosfor\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi hijyen zincirinin en zayıf halkasıdır?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Depolama",
+      "İnsan faktörü",
+      "Nakliye",
+      "Paketleme",
+      "Vergi indirimi sağlamak"
+    ],
+    "c": 1,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su ürünleri yönetiminde “sürdürülebilirlik” kavramını en iyi açıklar?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Kaynakların korunarak kullanılması",
+      "Denetimsiz serbest avcılık",
+      "Kısa vadeli kazanç",
+      "Sürekli avcılık",
+      "Denetimsizlik"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Kaynakların korunarak kullanılması\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Yem dönüşüm oranı (FCR) aşağıdakilerden hangisini ifade eder?   (Balık Besleme)",
+    "o": [
+      "Yemin enerji değeri",
+      "Ambalaj rengini değiştirmek",
+      "Balığın günlük yem ihtiyacı",
+      "1 kg canlı ağırlık artışı için tüketilen yem miktarı",
+      "Yemin protein oranı"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"1 kg canlı ağırlık artışı için tüketilen yem miktarı\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balık etinin yumuşaması aşağıdakilerden hangisinin göstergesidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Tazelik",
+      "Bozulma",
+      "Vergi indirimi sağlamak",
+      "Protein artışı",
+      "Yağ artışı"
+    ],
+    "c": 1,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi işletmede karlılığı artırmanın en etkili yoludur?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Rastgele üretim",
+      "Hiçbiri",
+      "Maliyetleri kontrol etmek",
+      "İşçi sayısını artırmak",
+      "Fiyatı artırmak"
+    ],
+    "c": 2,
+    "e": "Açıklama: Doğru seçenek \"Maliyetleri kontrol etmek\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Biyobirikim (bioaccumulation) aşağıdakilerden hangisini ifade eder?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Kirleticilerin canlı dokusunda birikmesi",
+      "Hiçbiri",
+      "Suyun temizlenmesi",
+      "Su sıcaklığı",
+      "Oksijen artışı"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Kirleticilerin canlı dokusunda birikmesi\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi balık yemlerinin su içinde batmasını sağlar?   (Balık Besleme)",
+    "o": [
+      "Ses",
+      "Renk",
+      "Ambalaj rengini değiştirmek",
+      "Hava",
+      "Yoğunluk"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Yoğunluk\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıklarda dış parazitler genellikle hangi davranışı oluşturur?   (Balık Hastalıkları)",
+    "o": [
+      "Hızlı büyüme",
+      "Pazarlama hızını artırmak",
+      "Normal davranış",
+      "Kaşınma",
+      "Sakin yüzme"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Kaşınma\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Minimum avlanma boyu uygulamasının temel amacı aşağıdakilerden hangisidir?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Balık fiyatlarını artırmak",
+      "Ticareti artırmak",
+      "Üreme şansı vermek",
+      "Rastgele boy sınırı",
+      "İhracatı artırmak"
+    ],
+    "c": 2,
+    "e": "Açıklama: Minimum boy uygulaması, balığın en az bir kez üremesine fırsat vererek stokların korunmasını amaçlar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su ürünleri mevzuatına göre cezai yaptırım gerektirir?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Yasak av aracı kullanmak",
+      "Denetimsiz serbest avcılık",
+      "Ruhsat almak",
+      "Boy yasağına uymak",
+      "Denetime uymak"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Yasak av aracı kullanmak\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi çapraz bulaşmaya örnektir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Soğuk depolama",
+      "Çiğ ve pişmiş ürünün temas etmesi",
+      "Vergi indirimi sağlamak",
+      "Temiz ekipman kullanımı",
+      "Paketleme"
+    ],
+    "c": 1,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi küçük boyda balık avlanmasının zararlarından biridir?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Fiyat düşmesi",
+      "Üreme artışı",
+      "Denetimsiz serbest avcılık",
+      "Stokların azalması",
+      "Kalite artışı"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Stokların azalması\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıklarda büyümenin en hızlı olduğu dönem aşağıdakilerden hangisidir?   (Balık Besleme)",
+    "o": [
+      "Açlık",
+      "Hiçbiri",
+      "Hastalık",
+      "Yaşlılık",
+      "Gençlik"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Gençlik\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Bir işletmede yem maliyetinin toplam maliyet içindeki payının yüksek olması aşağıdakilerden hangisini daha kritik hale getirir?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "İşçi sayısı",
+      "Işık süresi",
+      "Yemden yararlanma oranı (FCR)",
+      "Su sıcaklığı",
+      "Ambalaj rengini değiştirmek"
+    ],
+    "c": 2,
+    "e": "Açıklama: Doğru seçenek \"Yemden yararlanma oranı (FCR)\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi taze balık göstergesidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Vergi indirimi sağlamak",
+      "Parlak göz",
+      "Mat göz",
+      "Yumuşak doku",
+      "Kötü koku"
+    ],
+    "c": 1,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi talep kavramını etkiler?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Işık",
+      "Ses",
+      "Mevzuatı tek başına belirlemek",
+      "Gelir",
+      "Su"
+    ],
+    "c": 3,
+    "e": "Açıklama: Ekonomik göstergeler üretim miktarı, satış fiyatı ve maliyetler arasındaki ilişkiyle değerlendirilir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su kirliliğinin insan sağlığı üzerindeki etkisidir?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Hastalık riski",
+      "Oksijen artışı",
+      "Su kalitesi artışı",
+      "Hiçbiri",
+      "Verim artışı"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Hastalık riski\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balık yemlerinin granül (pelet) şeklinde olması ne sağlar?   (Balık Besleme)",
+    "o": [
+      "Ambalaj rengini değiştirmek",
+      "Enerjiyi azaltır",
+      "Tüketimi zorlaştırır",
+      "Dağılmayı artırır",
+      "Kullanım kolaylığı sağlar"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Kullanım kolaylığı sağlar\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Su ürünleri avcılığında getirilen yasakların temel amacı aşağıdakilerden hangisidir?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Denetimsiz serbest avcılık",
+      "İhracatı artırmak",
+      "Stokları korumak",
+      "Ticareti artırmak",
+      "Balık fiyatlarını düşürmek"
+    ],
+    "c": 2,
+    "e": "Açıklama: Mevzuatın amacı kaynakları korumak, kurallara uyumu sağlamak ve sürdürülebilirliği desteklemektir."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi sucul canlılar için toksik etki oluşturur?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Karbondioksit",
+      "Ağır metaller",
+      "Oksijen",
+      "Işık",
+      "Hiçbiri"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Ağır metaller\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balık yemlerinde sindirilebilirlik neden önemlidir?   (Balık Besleme)",
+    "o": [
+      "Renk için",
+      "Su artırmak için",
+      "Enerji kaybı için",
+      "Ambalaj rengini değiştirmek",
+      "Besin kullanımını artırmak için"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Besin kullanımını artırmak için\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıklarda bakteriyel enfeksiyonlar en çok hangi durumda ortaya çıkar?   (Balık Hastalıkları)",
+    "o": [
+      "Stresli ortam",
+      "Pazarlama hızını artırmak",
+      "Sağlıklı ortam",
+      "Dengeli ortam",
+      "Temiz su"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Stresli ortam\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi sürdürülebilir balıkçılığın temel ilkelerinden biridir?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Denetimsiz serbest avcılık",
+      "Sürekli av",
+      "Aşırı avcılık",
+      "Stokların korunması",
+      "Küçük balıkların avlanması"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Stokların korunması\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıklarda yemleme sırasında gözlemlenen en önemli kriter aşağıdakilerden hangisidir?   (Balık Besleme)",
+    "o": [
+      "Yem tüketim davranışı",
+      "Renk değişimi",
+      "Ambalaj rengini değiştirmek",
+      "Su seviyesi",
+      "Hava durumu"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Yem tüketim davranışı\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi hijyenin temel unsurudur?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Renk",
+      "Ses",
+      "Temizlik",
+      "Işık",
+      "Vergi indirimi sağlamak"
+    ],
+    "c": 2,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Balık yemlerinde yoğun enerji kaynağı olarak en çok hangi besin grubu kullanılır?   (Balık Besleme)",
+    "o": [
+      "Vitamin",
+      "Su",
+      "Ambalaj rengini değiştirmek",
+      "Yağ",
+      "Protein"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Yağ\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su ürünleri mevzuatında “kaçak avcılık” kapsamına girer?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Boy yasağına uyum",
+      "Yasak dönemde avcılık",
+      "Denetimsiz serbest avcılık",
+      "Denetime katılma",
+      "Ruhsatlı avcılık"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Yasak dönemde avcılık\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Yüksek proteinli yemler daha çok hangi balık türleri için uygundur?   (Balık Besleme)",
+    "o": [
+      "Ambalaj rengini değiştirmek",
+      "Otçul",
+      "Hepsi",
+      "Planktonla beslenen",
+      "Etçil"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Etçil\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi sürdürülebilir ekonomik üretimin temelidir?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Hiçbiri",
+      "Kaynak yönetimi",
+      "Rastgele üretim",
+      "Aşırı üretim",
+      "Denetimsizlik"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Kaynak yönetimi\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balık yemlerinin su içinde çözünmesi aşağıdakilerden hangisine yol açar?   (Balık Besleme)",
+    "o": [
+      "Oksijen artışı",
+      "Ambalaj rengini değiştirmek",
+      "Büyüme artışı",
+      "Su temizliği",
+      "Besin kaybı"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Besin kaybı\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıkta mukus tabakasının artması aşağıdakilerden hangisini gösterir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Bozulma",
+      "Tazelik",
+      "Vergi indirimi sağlamak",
+      "Yağ artışı",
+      "Protein artışı"
+    ],
+    "c": 0,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi eutrofikasyonun ileri aşamasıdır?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Tuz azalması",
+      "Balık yeminin sindirimi",
+      "Sıcaklık düşmesi",
+      "Oksijen tükenmesi",
+      "Su berraklığı"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Oksijen tükenmesi\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi balık yemlerinde esansiyel amino asitlerden biridir?   (Balık Besleme)",
+    "o": [
+      "Glisin",
+      "Prolin",
+      "Lizin",
+      "Serin",
+      "Ambalaj rengini değiştirmek"
+    ],
+    "c": 2,
+    "e": "Açıklama: Doğru seçenek \"Lizin\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Su kirliliğinin en temel tanımı aşağıdakilerden hangisidir?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Hiçbiri",
+      "Suyun doğal yapısının bozulması",
+      "Suyun renginin değişmesi",
+      "Suyun sıcaklığının artması",
+      "Suyun akış hızının değişmesi"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Suyun doğal yapısının bozulması\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "İhtiyofthirius (beyaz benek) hastalığı aşağıdaki etkenlerden hangisiyle oluşur?   (Balık Hastalıkları)",
+    "o": [
+      "Mantar",
+      "Virüs",
+      "Bakteri",
+      "Pazarlama hızını artırmak",
+      "Parazit"
+    ],
+    "c": 4,
+    "e": "Açıklama: Beyaz benek hastalığında deri ve yüzgeçler üzerinde tuz serpilmiş gibi beyaz noktalar görülür."
+  },
+  {
+    "q": "Nitrat (NO3) aşağıdakilerden hangisidir?   (Su Kalitesi)",
+    "o": [
+      "Balığın pazar değerini belirlemek",
+      "Çok toksik",
+      "Zararsız",
+      "Daha az zararlı",
+      "Orta toksik"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Daha az zararlı\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi işletme başarısının temel göstergesidir?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Karlılık",
+      "Üretim rastgeleliği",
+      "Hiçbiri",
+      "Denetimsizlik",
+      "Stres"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Karlılık\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıklarda sağlıklı üretim için aşağıdakilerden hangisi gereklidir?   (Balık Hastalıkları)",
+    "o": [
+      "Stres",
+      "Aşırı stoklama",
+      "Uygun çevre koşulları",
+      "Düzensiz yemleme",
+      "Pazarlama hızını artırmak"
+    ],
+    "c": 2,
+    "e": "Açıklama: Doğru seçenek \"Uygun çevre koşulları\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdaki türlerden hangisi küçük boylu olduğu için minimum av boyu daha düşüktür?   (Su Ürünleri Mevzuatı)",
+    "o": [
+      "Orkinos",
+      "Hamsi",
+      "Rastgele boy sınırı",
+      "Kalkan",
+      "Levrek"
+    ],
+    "c": 1,
+    "e": "Açıklama: Minimum boy uygulaması, balığın en az bir kez üremesine fırsat vererek stokların korunmasını amaçlar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi “ölçek ekonomisi” kavramını en iyi açıklar?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Üretim arttıkça birim maliyetin düşmesi",
+      "Sabit maliyetlerin artması",
+      "Üretim azaldıkça maliyetin düşmesi",
+      "Hiçbiri",
+      "Küçük üretimde maliyet düşmesi"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Üretim arttıkça birim maliyetin düşmesi\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi fiziksel kontaminasyon örneğidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Vergi indirimi sağlamak",
+      "Küf",
+      "Cam kırığı",
+      "Bakteri",
+      "Virüs"
+    ],
+    "c": 2,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su kirliliği kontrolünde en önemli adımdır?   (Su Kirliliği ve Kontrolü)",
+    "o": [
+      "Hiçbiri",
+      "Denetimsizlik",
+      "Rastgele kullanım",
+      "Atık bırakmak",
+      "Kaynağında önleme"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Kaynağında önleme\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Su ürünleri yetiştiriciliğinde en büyük maliyet kalemi genellikle aşağıdakilerden hangisidir?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Mevzuatı tek başına belirlemek",
+      "İşçilik",
+      "Elektrik",
+      "Yem gideri",
+      "Su"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Yem gideri\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıklarda dış parazitlerin en sık bulunduğu bölge aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    "o": [
+      "Kemik",
+      "Deri ve solungaç",
+      "Kas",
+      "Pazarlama hızını artırmak",
+      "İç organlar"
+    ],
+    "c": 1,
+    "e": "Açıklama: Doğru seçenek \"Deri ve solungaç\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su kalitesinin korunmasında en etkili yöntemdir?   (Su Kalitesi)",
+    "o": [
+      "Balığın pazar değerini belirlemek",
+      "Stres",
+      "Aşırı yemleme",
+      "Denetimsizlik",
+      "Düzenli su değişimi"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Düzenli su değişimi\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıkta amonyak kokusu aşağıdakilerden hangisinin göstergesidir?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Bozulma",
+      "Protein artışı",
+      "Vitamin artışı",
+      "Vitamin kaybı",
+      "Tazelik"
+    ],
+    "c": 0,
+    "e": "Açıklama: Keskin kötü koku ve amonyak benzeri koku ileri düzey bozulmanın tipik göstergesidir."
+  },
+  {
+    "q": "Balıklarda hastalıkların ortaya çıkmasını kolaylaştıran durum aşağıdakilerden hangisidir?   (Balık Hastalıkları)",
+    "o": [
+      "Pazarlama hızını artırmak",
+      "Dengeli beslenme",
+      "Stres",
+      "Temiz su",
+      "Uygun sıcaklık"
+    ],
+    "c": 2,
+    "e": "Açıklama: Doğru seçenek \"Stres\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi su ürünlerinde kalite ve güvenliğin temelini oluşturur?   (Su Ürünlerinde Hijyen ve Kalite Kontrolü)",
+    "o": [
+      "Pazarlama",
+      "Reklam",
+      "Vergi indirimi sağlamak",
+      "Hijyen ve soğuk zincir",
+      "Fiyat"
+    ],
+    "c": 3,
+    "e": "Açıklama: Hijyen uygulamaları mikrobiyal bulaşmayı azaltarak ürün güvenliğini korur."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi piyasa dengesini belirler?   (Su Ürünleri Ekonomisi)",
+    "o": [
+      "Arz ve talep",
+      "Işık",
+      "Oksijen",
+      "Su sıcaklığı",
+      "Hiçbiri"
+    ],
+    "c": 0,
+    "e": "Açıklama: Doğru seçenek \"Arz ve talep\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balık yemlerinin suda batma veya yüzme özelliği neye bağlıdır?   (Balık Besleme)",
+    "o": [
+      "Işık",
+      "Renk",
+      "Ambalaj rengini değiştirmek",
+      "Ses",
+      "Yoğunluk"
+    ],
+    "c": 4,
+    "e": "Açıklama: Doğru seçenek \"Yoğunluk\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıkların su yüzeyinde toplanması aşağıdakilerden hangisini gösterir?   (Su Kalitesi)",
+    "o": [
+      "Temiz su",
+      "Yüksek oksijen",
+      "Balığın pazar değerini belirlemek",
+      "Düşük oksijen",
+      "Uygun pH"
+    ],
+    "c": 3,
+    "e": "Açıklama: Doğru seçenek \"Düşük oksijen\" ifadesidir; bu kavram soru kökündeki temel ilişkiyi en doğru şekilde açıklar."
+  },
+  {
+    "q": "Balıklarda su kalitesinin bozulması aşağıdakilerden hangisine neden olur?   (Balık Besleme)",
+    "o": [
+      "Vitamin artışı",
+      "Hastalık riski",
+      "Büyüme artışı",
+      "Oksijen artışı",
+      "Balığın pazar değerini belirlemek"
+    ],
+    "c": 1,
+    "e": "Açıklama: Keskin kötü koku ve amonyak benzeri koku ileri düzey bozulmanın tipik göstergesidir."
+  },
+  {
+    "q": "Amonyak (NH3) zehirliliğini azaltmak için aşağıdakilerden hangisi yapılmalıdır?   (Su Kalitesi)",
+    "o": [
+      "Yem artırılmalı",
+      "Sıcaklık artırılmalı",
+      "pH düşürülmeli",
+      "Vitamin kaybı",
+      "pH yükseltilmeli"
+    ],
+    "c": 2,
+    "e": "Açıklama: Amonyak özellikle pH ve sıcaklık yükseldiğinde daha toksik hale gelir ve balıklar için risk oluşturur."
+  }
+];
+
+  document.getElementById("mainTitle").textContent = `${BASE_SUBJECT} Deneme Sınavı`;
+  document.getElementById("headerSubject").textContent = BASE_SUBJECT;
+  document.getElementById("sourceTag").textContent = SOURCE_TEXT;
+  document.title = `${BASE_SUBJECT} Deneme Sınavı`;
+
+  if (performance.navigation.type === performance.navigation.TYPE_RELOAD || !sessionStorage.getItem("session_active")) {
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith(storagePrefix())) localStorage.removeItem(k);
+    });
+    sessionStorage.setItem("session_active", "true");
+  }
+
+  let currentQuestions = [];
+  let currentIndex = 0;
+  let solvedIndex = -1;
+  let userAnswers = {};
+  let currentSetKey = "";
+  let stats = { correct: 0, wrong: 0 };
+  let wrongQuestionsMode = false;
+
+  function storagePrefix() {
+    return "exam_" + CURRENT_SUBJECT.replace(/\s+/g, "_") + "_";
+  }
+
+  function setStateKey(index) {
+    return storagePrefix() + "state_set_" + index;
+  }
+
+  function wrongQuestionsKey() {
+    return storagePrefix() + "wrong_questions_pool";
+  }
+
+  function getWrongQuestionsPool() {
+    return JSON.parse(localStorage.getItem(wrongQuestionsKey()) || "[]");
+  }
+
+  function saveWrongQuestionsPool(pool) {
+    localStorage.setItem(wrongQuestionsKey(), JSON.stringify(pool));
+  }
+
+  function addWrongQuestionToPool(question) {
+    const pool = getWrongQuestionsPool();
+
+    const exists = pool.some(item =>
+      item.q === question.q &&
+      JSON.stringify(item.o) === JSON.stringify(question.o)
+    );
+
+    if (!exists) {
+      pool.push({
+        q: question.q,
+        o: [...question.o],
+        c: question.c,
+        e: question.e || ""
+      });
+      saveWrongQuestionsPool(pool);
+    }
+  }
+
+  function normalizeQuestion(q, originalIndex) {
+    return {
+      id: q.id || ("q_" + originalIndex + "_" + Math.random().toString(36).slice(2, 8)),
+      originalNo: originalIndex + 1,
+      q: q.q,
+      o: [...q.o],
+      c: q.c,
+      e: q.e || "",
+      isRetry: q.isRetry || false,
+      retryFrom: q.retryFrom || null,
+      retryCount: q.retryCount || 0,
+      answeredCorrectly: q.answeredCorrectly || false
+    };
+  }
+
+  function initMenu() {
+    const menuGrid = document.getElementById("menuGrid");
+    menuGrid.innerHTML = "";
+
+    const totalSets = Math.ceil(questions.length / QUESTIONS_PER_SET);
+
+    let setsPerButton = 1;
+    let buttonCount = totalSets;
+
+    if (buttonCount > 10) {
+      setsPerButton = 2;
+      buttonCount = Math.ceil(totalSets / setsPerButton);
+    }
+
+    buttonCount = Math.min(buttonCount, 10);
+
+    for (let i = 0; i < buttonCount; i++) {
+      const startSetNo = i * setsPerButton + 1;
+      const endSetNo = Math.min(startSetNo + setsPerButton - 1, totalSets);
+
+      const start = (startSetNo - 1) * QUESTIONS_PER_SET;
+      const end = Math.min(endSetNo * QUESTIONS_PER_SET, questions.length);
+
+      if (start >= questions.length) continue;
+
+      const key = setStateKey(i);
+
+      const saved = JSON.parse(localStorage.getItem(key) || "null");
+      const solved = saved ? Object.keys(saved.userAnswers || {}).length : 0;
+      const correct = saved?.stats?.correct || 0;
+      const wrong = saved?.stats?.wrong || 0;
+
+      const totalCurrent = saved?.currentQuestions?.length || (end - start);
+      const isCompleted = saved ? (solved >= totalCurrent && totalCurrent > 0) : false;
+
+      const label = startSetNo === endSetNo
+        ? `Deneme-${startSetNo}`
+        : `Deneme-${startSetNo}-${endSetNo}`;
+
+      const btn = document.createElement("button");
+      btn.className = `menu-btn ${isCompleted ? "locked" : ""}`;
+      btn.innerHTML = `
+        <strong>${label}</strong><br>
+        <small>${end - start} Soru | Çözülen ${solved} (Doğru ${correct} Yanlış ${wrong})</small>
+      `;
+
+      if (!isCompleted) {
+        btn.onclick = () => startSet(i, key, start, end);
+      }
+
+      menuGrid.appendChild(btn);
+    }
+
+    const wrongPool = getWrongQuestionsPool();
+
+    if (wrongPool.length > 0) {
+      const wrongBtn = document.createElement("button");
+      wrongBtn.className = "wrong-menu-btn";
+      wrongBtn.innerHTML = `
+        <strong>Yanlış Yapılan Sorular</strong><br>
+        <small>${wrongPool.length} Soru | Yeniden çöz</small>
+      `;
+      wrongBtn.onclick = openWrongQuestions;
+      menuGrid.appendChild(wrongBtn);
+    }
+  }
+
+  function openWrongQuestions() {
+    const pool = getWrongQuestionsPool();
+    if (!pool.length) return;
+
+    wrongQuestionsMode = true;
+    currentSetKey = storagePrefix() + "wrong_questions_state";
+
+    const saved = JSON.parse(localStorage.getItem(currentSetKey) || "null");
+
+    if (saved) {
+      currentQuestions = saved.currentQuestions;
+      currentIndex = saved.currentIndex;
+      solvedIndex = saved.solvedIndex;
+      userAnswers = saved.userAnswers || {};
+      stats = saved.stats || { correct: 0, wrong: 0 };
+    } else {
+      currentQuestions = pool.map((q, i) => ({
+        id: "wrong_" + i + "_" + Math.random().toString(36).slice(2, 8),
+        originalNo: i + 1,
+        q: q.q,
+        o: [...q.o],
+        c: q.c,
+        e: q.e || "",
+        isRetry: false,
+        retryFrom: null,
+        retryCount: 0,
+        answeredCorrectly: false
+      }));
+
+      currentIndex = 0;
+      solvedIndex = -1;
+      userAnswers = {};
+      stats = { correct: 0, wrong: 0 };
+      saveState();
+    }
+
+    document.getElementById("menuContainer").style.display = "none";
+    document.getElementById("quizContainer").style.display = "block";
+    document.getElementById("headerSubject").textContent = "Yanlış Yapılan Sorular";
+    loadQuestion();
+    window.scrollTo(0, 0);
+  }
+
+  function startSet(idx, key, start, end) {
+    wrongQuestionsMode = false;
+    currentSetKey = key;
+
+    const saved = JSON.parse(localStorage.getItem(key) || "null");
+
+    if (saved) {
+      currentQuestions = saved.currentQuestions;
+      currentIndex = saved.currentIndex;
+      solvedIndex = saved.solvedIndex;
+      userAnswers = saved.userAnswers || {};
+      stats = saved.stats || { correct: 0, wrong: 0 };
+    } else {
+      currentQuestions = questions.slice(start, end).map((q, i) => normalizeQuestion(q, start + i));
+      currentIndex = 0;
+      solvedIndex = -1;
+      userAnswers = {};
+      stats = { correct: 0, wrong: 0 };
+      saveState();
+    }
+
+    document.getElementById("menuContainer").style.display = "none";
+    document.getElementById("quizContainer").style.display = "block";
+    document.getElementById("headerSubject").textContent = BASE_SUBJECT;
+    loadQuestion();
+    window.scrollTo(0, 0);
+  }
+
+  function getQuestionTitle(q) {
+    return `Soru-${q.originalNo}: ${q.q}`;
+  }
+
+  function loadQuestion() {
+    const q = currentQuestions[currentIndex];
+    const progress = ((currentIndex + 1) / currentQuestions.length) * 100;
+
+    document.getElementById("progressBar").style.width = progress + "%";
+    document.getElementById("footerLeft").textContent = `Kalan: ${Math.max(currentQuestions.length - (currentIndex + 1), 0)}`;
+    document.getElementById("footerRight").textContent = `${currentIndex + 1} / ${currentQuestions.length}`;
+    document.getElementById("questionText").textContent = getQuestionTitle(q);
+
+    const retryBadge = document.getElementById("retryBadge");
+    retryBadge.style.display = q.isRetry ? "block" : "none";
+
+    const optArea = document.getElementById("optionsArea");
+    const expArea = document.getElementById("explanationArea");
+    optArea.innerHTML = "";
+    expArea.style.display = "none";
+    expArea.innerHTML = "";
+
+    const letters = ["A", "B", "C", "D"];
+
+    q.o.forEach((opt, idx) => {
+      const btn = document.createElement("button");
+      btn.className = "option-btn";
+      btn.innerHTML = `<strong>${letters[idx]})</strong> ${opt}`;
+
+      if (currentIndex <= solvedIndex) {
+        btn.disabled = true;
+        const userChoice = userAnswers[currentIndex];
+
+        if (idx === userChoice) {
+          if (userChoice === q.c) {
+            btn.classList.add("correct");
+            btn.innerHTML += ` <span class="tick show">✔</span>`;
+          } else {
+            btn.classList.add("wrong");
+          }
+        }
+
+        if (wrongQuestionsMode) {
+          if (idx === q.c) {
+            btn.classList.add("correct");
+            btn.innerHTML += ` <span class="tick show">✔</span>`;
+          }
+          expArea.innerHTML = `<strong>Açıklama:</strong> ${q.e}`;
+          expArea.style.display = "block";
+        } else {
+          if (userChoice === q.c) {
+            expArea.innerHTML = `<strong>Açıklama:</strong> ${q.e}`;
+            expArea.style.display = "block";
+          } else if (q.isRetry) {
+            if (idx === q.c) {
+              btn.classList.add("correct");
+              btn.innerHTML += ` <span class="tick show">✔</span>`;
+            }
+            expArea.innerHTML = `<strong>Açıklama:</strong> ${q.e}`;
+            expArea.style.display = "block";
+          }
+        }
+      } else {
+        btn.onclick = () => selectOption(idx);
+      }
+
+      optArea.appendChild(btn);
+    });
+
+    document.getElementById("prevBtn").style.visibility = currentIndex > 0 ? "visible" : "hidden";
+    document.getElementById("nextBtn").style.visibility = currentIndex <= solvedIndex ? "visible" : "hidden";
+  }
+
+  function selectOption(idx) {
+    const q = currentQuestions[currentIndex];
+    const isCorrect = idx === q.c;
+
+    userAnswers[currentIndex] = idx;
+    solvedIndex = Math.max(solvedIndex, currentIndex);
+
+    if (isCorrect) {
+      stats.correct++;
+      q.answeredCorrectly = true;
+    } else {
+      stats.wrong++;
+
+      if (wrongQuestionsMode) {
+        // Yanlış Yapılan Sorular modunda soru yeniden eklenmez.
+      } else {
+        addWrongQuestionToPool(q);
+
+        if (!q.isRetry) {
+          const retryQuestion = {
+            ...q,
+            isRetry: true,
+            retryFrom: q.originalNo,
+            retryCount: 1
+          };
+
+          const insertIndex = Math.min(currentIndex + 5, currentQuestions.length);
+          currentQuestions.splice(insertIndex, 0, retryQuestion);
+        }
+      }
+    }
+
+    saveState();
+    loadQuestion();
+  }
+
+  function saveState() {
+    localStorage.setItem(currentSetKey, JSON.stringify({
+      currentQuestions,
+      currentIndex,
+      solvedIndex,
+      userAnswers,
+      stats
+    }));
+  }
+
+  function goForward() {
+    if (currentIndex < solvedIndex) {
+      currentIndex = solvedIndex + 1;
+    } else if (currentIndex < currentQuestions.length - 1) {
+      currentIndex++;
+    } else {
+      return showMenu();
+    }
+
+    saveState();
+    loadQuestion();
+    window.scrollTo(0, 0);
+  }
+
+  function goBack() {
+    if (currentIndex > 0) {
+      currentIndex--;
+      saveState();
+      loadQuestion();
+      window.scrollTo(0, 0);
+    }
+  }
+
+  function showMenu() {
+    wrongQuestionsMode = false;
+    document.getElementById("headerSubject").textContent = BASE_SUBJECT;
+    document.getElementById("quizContainer").style.display = "none";
+    document.getElementById("menuContainer").style.display = "block";
+    initMenu();
+    window.scrollTo(0, 0);
+  }
+
+  function clearAllStatistics() {
+    if (confirm("Tüm veriler sıfırlansın mı?")) {
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith(storagePrefix())) localStorage.removeItem(k);
+      });
+      initMenu();
+    }
+  }
+
+  function resetCurrentSet() {
+    if (confirm("Bu deneme sıfırlansın mı?")) {
+      localStorage.removeItem(currentSetKey);
+      showMenu();
+    }
+  }
+
+  initMenu();
+</script>
+
+<script>
+function shuffleAllQuestions() {
+  if (!confirm("Tüm sorular ve şıkları karıştırılsın mı?")) return;
+
+  questions.forEach(q => {
+    const correct = q.o[q.c];
+    for (let i = q.o.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [q.o[i], q.o[j]] = [q.o[j], q.o[i]];
+    }
+    q.c = q.o.findIndex(x => x === correct);
+  });
+
+  for (let i = questions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [questions[i], questions[j]] = [questions[j], questions[i]];
+  }
+
+  if (typeof storagePrefix === "function") {
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith(storagePrefix())) localStorage.removeItem(k);
+    });
+  }
+
+  alert("Sorular karıştırıldı!");
+  if (typeof initMenu === "function") initMenu();
+}
+</script>
+
+</body>
+</html>
